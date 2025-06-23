@@ -22,7 +22,7 @@ $conn->close();
     <title>School Club Management System - Home</title>
     <style>
         body {
-            font-family: 'T', Times, serif;
+            font-family: 'Times New Roman', Times, serif;
             margin: 0;
             padding: 0;
             background-color: rgb(169, 153, 136);
