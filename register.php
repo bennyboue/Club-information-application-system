@@ -203,13 +203,6 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
     <div class="container">
         <h2>Register for School Club Management System</h2>
         
-        <div class="info-box">
-            <strong>School ID Format Requirements:</strong>
-            • Student: Just your ID (e.g., "12345")<br>
-            • Club Patron: ID-CLUB_INITIALS (e.g., "12345-SC" for Sports Club)<br>
-            • Admin: ID-SURNAME (e.g., "12345-Smith")
-        </div>
-
         <?php if ($message != ""): ?>
             <p class="<?php echo strpos($message, '✅') !== false ? 'success' : ''; ?>">
                 <?php echo $message; ?>
@@ -224,7 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
             <select name="role" id="role" required onchange="updateSchoolIdPlaceholder()">
                 <option value="">-- Select Role --</option>
                 <option value="student">Student</option>
-                <option value="club_patron">Club Patron</option>
+                <option value="club_manager">Club Manager</option>
                 <option value="admin">School Admin</option>
             </select>
 

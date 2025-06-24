@@ -22,7 +22,7 @@ $conn->close();
     <title>School Club Management System - Home</title>
     <style>
         body {
-            font-family: 'Times New Roma', Times, serif;
+            font-family: 'Times New Roman', Times, serif;
             margin: 0;
             padding: 0;
             background-color: rgb(169, 153, 136);
@@ -682,8 +682,8 @@ $conn->close();
                 </span>
                 <?php if ($_SESSION['role'] === 'admin'): ?>
                     <a href="admin_dashboard.php">Admin Dashboard</a>
-                <?php elseif ($_SESSION['role'] === 'club_patron'): ?>
-                    <a href="patron_dashboard.php">Patron Dashboard</a>
+                <?php elseif ($_SESSION['role'] === 'club_manager'): ?>
+                    <a href="manager_dashboard.php">Manager Dashboard</a>
                 <?php else: ?>
                     <a href="student_dashboard.php">Dashboard</a>
                 <?php endif; ?>
@@ -827,7 +827,7 @@ $conn->close();
         </div>
     </div>
 
-    <!-- NEW ENCOURAGEMENT SECTION -->
+    <!--ENCOURAGEMENT SECTION -->
     <div class="encouragement-section">
         <h2 class="encouragement-header">🌟 Why Join a Club? Transform Your University Experience! 🌟</h2>
         <div class="encouragement-content">

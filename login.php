@@ -194,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
         <div class="info-box">
             <strong>School ID Format:</strong>
             • Student: Just your ID (e.g., "12345")<br>
-            • Club Patron: ID-CLUB_INITIALS (e.g., "12345-SC")<br>
+            • Club Manager: ID-CLUB_INITIALS (e.g., "12345-SC")<br>
             • Admin: ID-SURNAME (e.g., "12345-Smith")
         </div>
 
