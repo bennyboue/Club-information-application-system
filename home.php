@@ -83,7 +83,7 @@ $conn->close();
 
         .image-gallery img {
             width: 100%;
-            height: 320px; /* Increased from 200px to 320px */
+            height: 320px;
             object-fit: cover;
             border-radius: 8px;
             transition: transform 0.3s ease, opacity 0.3s ease;
@@ -335,6 +335,200 @@ $conn->close();
             }
         }
 
+        /* NEW STYLES FOR CLUB ENCOURAGEMENT SECTIONS */
+        .encouragement-section {
+            background-color: rgb(237, 222, 203);
+            margin: 40px 20px;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border: 3px solid rgb(209, 120, 25);
+        }
+
+        .encouragement-header {
+            text-align: center;
+            color: rgb(209, 120, 25);
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .encouragement-content {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .benefit-card {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-left: 5px solid rgb(209, 120, 25);
+        }
+
+        .benefit-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .benefit-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .benefit-title {
+            font-weight: bold;
+            color: rgb(209, 120, 25);
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .benefit-description {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .events-section {
+            background: linear-gradient(135deg, rgb(169, 153, 136), rgb(237, 222, 203));
+            margin: 40px 20px;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .event-card {
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            border-top: 4px solid rgb(209, 120, 25);
+        }
+
+        .event-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .event-title {
+            font-weight: bold;
+            color: rgb(209, 120, 25);
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .event-club {
+            color: #666;
+            font-style: italic;
+            margin-bottom: 15px;
+        }
+
+        .event-description {
+            color: #333;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .event-impact {
+            background-color: rgb(237, 222, 203);
+            padding: 10px;
+            border-radius: 5px;
+            font-style: italic;
+            color: rgb(150, 85, 10);
+            font-size: 14px;
+        }
+
+        .memories-section {
+            background-color: rgb(237, 222, 203);
+            margin: 40px 20px;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border: 3px solid rgb(209, 120, 25);
+        }
+
+        .memories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .memory-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            border-left: 4px solid rgb(209, 120, 25);
+        }
+
+        .memory-quote {
+            font-style: italic;
+            color: #333;
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .memory-author {
+            color: rgb(209, 120, 25);
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .memory-club {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .call-to-action {
+            background: linear-gradient(135deg, rgb(209, 120, 25), rgb(150, 85, 10));
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .cta-button {
+            background-color: white;
+            color: rgb(209, 120, 25);
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .cta-button:hover {
+            background-color: rgb(237, 222, 203);
+            transform: scale(1.05);
+        }
+
         /* Footer Styles */
         .footer {
             background-color: rgb(237, 222, 203);
@@ -348,7 +542,7 @@ $conn->close();
             max-width: 1200px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 40px;
             padding: 0 30px;
         }
@@ -436,7 +630,7 @@ $conn->close();
             }
 
             .image-gallery img {
-                height: 250px; /* Adjusted for mobile */
+                height: 250px;
             }
 
             .user-welcome {
@@ -457,6 +651,19 @@ $conn->close();
                 grid-template-columns: 1fr;
                 gap: 20px;
                 padding: 0 20px;
+            }
+
+            .encouragement-section,
+            .events-section,
+            .memories-section {
+                margin: 20px 10px;
+                padding: 20px;
+            }
+
+            .benefits-grid,
+            .events-grid,
+            .memories-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -620,6 +827,214 @@ $conn->close();
         </div>
     </div>
 
+    <!-- NEW ENCOURAGEMENT SECTION -->
+    <div class="encouragement-section">
+        <h2 class="encouragement-header">🌟 Why Join a Club? Transform Your University Experience! 🌟</h2>
+        <div class="encouragement-content">
+            <p>University is more than just lectures and exams - it's about discovering who you are, building lifelong friendships, and developing skills that will serve you for years to come. Our clubs are the gateway to an enriched, fulfilling university experience!</p>
+        </div>
+        
+        <div class="benefits-grid">
+            <div class="benefit-card">
+                <span class="benefit-icon">🤝</span>
+                <div class="benefit-title">Build Lasting Friendships</div>
+                <div class="benefit-description">Connect with like-minded peers who share your interests and passions. Many of our alumni still maintain friendships formed in clubs decades later!</div>
+            </div>
+            
+            <div class="benefit-card">
+                <span class="benefit-icon">🚀</span>
+                <div class="benefit-title">Develop Leadership Skills</div>
+                <div class="benefit-description">Take on leadership roles, organize events, and develop skills that employers value. Our club leaders often become successful entrepreneurs and executives.</div>
+            </div>
+            
+            <div class="benefit-card">
+                <span class="benefit-icon">🎯</span>
+                <div class="benefit-title">Discover Your Passion</div>
+                <div class="benefit-description">Explore new interests, discover hidden talents, and find what truly excites you. Many students have changed their career paths after discovering new passions in clubs.</div>
+            </div>
+            
+            <div class="benefit-card">
+                <span class="benefit-icon">💼</span>
+                <div class="benefit-title">Boost Your Resume</div>
+                <div class="benefit-description">Stand out to employers with demonstrated extracurricular involvement, leadership experience, and practical skills gained through club activities.</div>
+            </div>
+            
+            <div class="benefit-card">
+                <span class="benefit-icon">🌍</span>
+                <div class="benefit-title">Make a Difference</div>
+                <div class="benefit-description">Contribute to your community, organize charity events, and be part of initiatives that create positive change on campus and beyond.</div>
+            </div>
+            
+            <div class="benefit-card">
+                <span class="benefit-icon">🧠</span>
+                <div class="benefit-title">Learn Beyond the Classroom</div>
+                <div class="benefit-description">Gain practical experience, develop creative skills, and learn from peers in a fun, supportive environment that complements your academic studies.</div>
+            </div>
+        </div>
+        
+        <div class="call-to-action">
+            <h3>Ready to Transform Your University Experience?</h3>
+            <p>Don't let this opportunity pass you by! Join a club today and become part of something amazing.</p>
+            <button class="cta-button" onclick="scrollToClubs()">Explore Clubs Above ↑</button>
+        </div>
+    </div>
+
+    <!-- RENOWNED CLUB EVENTS SECTION -->
+    <div class="events-section">
+        <h2 class="encouragement-header">🏆 Renowned Club Events & Achievements 🏆</h2>
+        <div class="encouragement-content">
+            <p>Our clubs don't just meet - they make history! Here are some of our most celebrated events and achievements that have put our university on the map.</p>
+        </div>
+        
+        <div class="events-grid">
+            <div class="event-card">
+                <div class="event-title">Annual Inter-University Chess Championship</div>
+                <div class="event-club">Chess Club</div>
+                <div class="event-description">
+                    Our Chess Club hosts the region's most prestigious inter-university chess tournament, attracting over 200 participants from 15 universities. The event has been running for 12 years and has produced 3 national champions.
+                </div>
+                <div class="event-impact">
+                    "This tournament launched my career as a professional chess player. The level of competition and organization was exceptional!" - Alumni Winner 2019
+                </div>
+            </div>
+            
+            <div class="event-card">
+                <div class="event-title">Innovation & Robotics Expo</div>
+                <div class="event-club">Robotics & Engineering Club</div>
+                <div class="event-description">
+                    An annual showcase of cutting-edge technology and innovation, featuring student-built robots, AI demonstrations, and tech startups. Last year's expo attracted over 5,000 visitors including industry leaders and venture capitalists.
+                </div>
+                <div class="event-impact">
+                    Two startups launched at our expo have received over $2M in funding and are now successful tech companies!
+                </div>
+            </div>
+            
+            <div class="event-card">
+                <div class="event-title">Art Gallery Night & Cultural Festival</div>
+                <div class="event-club">Painting & Visual Arts Club</div>
+                <div class="event-description">
+                    A magical evening where our campus transforms into an art gallery, featuring student artwork, live performances, and cultural exhibitions. The event has become the most anticipated cultural celebration of the year.
+                </div>
+                <div class="event-impact">
+                    Several student artists have been discovered at this event and now have their work displayed in professional galleries!
+                </div>
+            </div>
+            
+            <div class="event-card">
+                <div class="event-title">National Debate Championship</div>
+                <div class="event-club">Debate & Critical Thinking Club</div>
+                <div class="event-description">
+                    Our debate team has won the National University Debate Championship 3 times in the last 5 years. They tackle contemporary issues and have debated in front of government officials and policy makers.
+                </div>
+                <div class="event-impact">
+                    Many of our debaters have gone on to become lawyers, politicians, and public speakers who shape national discourse.
+                </div>
+            </div>
+            
+            <div class="event-card">
+                <div class="event-title">Sports Excellence Awards Gala</div>
+                <div class="event-club">All Sports Clubs</div>
+                <div class="event-description">
+                    An annual celebration of athletic achievement where we honor outstanding student-athletes, coaches, and sports achievements. The gala attracts professional scouts and sponsors.
+                </div>
+                <div class="event-impact">
+                    15+ students have received sports scholarships and professional contracts through connections made at this event!
+                </div>
+            </div>
+            
+            <div class="event-card">
+                <div class="event-title">Science Fair & Research Symposium</div>
+                <div class="event-club">Science & Technology Clubs</div>
+                <div class="event-description">
+                    A platform for students to present their research projects and scientific innovations. The event attracts researchers, professors, and industry experts who provide mentorship and collaboration opportunities.
+                </div>
+                <div class="event-impact">
+                    Student research presented here has been published in academic journals and patent applications have been filed!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MEMORABLE MOMENTS SECTION -->
+    <div class="memories-section">
+        <h2 class="encouragement-header">💭 Memorable Moments & Student Testimonials 💭</h2>
+        <div class="encouragement-content">
+            <p>Don't just take our word for it - hear from students whose lives have been transformed by their club experiences!</p>
+        </div>
+        
+        <div class="memories-grid">
+            <div class="memory-card">
+                <div class="memory-quote">
+                    "Joining the Chess Club was the best decision I made in university. Not only did I improve my strategic thinking, but I also met my best friends and even my future business partner. We now run a successful consulting firm together!"
+                </div>
+                <div class="memory-author">- Sarah M., Business Graduate 2022</div>
+                <div class="memory-club">Chess Club Alumni</div>
+            </div>
+            
+            <div class="memory-card">
+                <div class="memory-quote">
+                    "The Robotics Club taught me more about engineering than any textbook ever could. Building robots with my teammates prepared me for my dream job at a leading tech company. The hands-on experience was invaluable."
+                </div>
+                <div class="memory-author">- David K., Engineering Graduate 2023</div>
+                <div class="memory-club">Robotics & Engineering Club Alumni</div>
+            </div>
+            
+            <div class="memory-card">
+                <div class="memory-quote">
+                    "I was shy and struggled to make friends until I joined the Music Club. Through jam sessions and performances, I found my voice - literally and figuratively. I'm now a confident performer and music teacher."
+                </div>
+                <div class="memory-author">- Emma L., Music Education Graduate 2021</div>
+                <div class="memory-club">Music Harmony Club Alumni</div>
+            </div>
+            
+            <div class="memory-card">
+                <div class="memory-quote">
+                    "The Debate Club transformed me from someone who was afraid to speak in public to someone who now addresses boardrooms with confidence. The critical thinking skills I developed have been crucial in my legal career."
+                </div>
+                <div class="memory-author">- Michael R., Law Graduate 2020</div>
+                <div class="memory-club">Debate & Critical Thinking Club Alumni</div>
+            </div>
+            
+            <div class="memory-card">
+                <div class="memory-quote">
+                    "Painting Club wasn't just about art - it was therapy, friendship, and self-discovery all rolled into one. I discovered my passion for art therapy and now help others heal through creative expression."
+                </div>
+                <div class="memory-author">- Lisa T., Psychology Graduate 2022</div>
+                <div class="memory-club">Painting & Visual Arts Club Alumni</div>
+            </div>
+            
+            <div class="memory-card">
+                <div class="memory-quote">
+                    "The Basketball Club taught me teamwork, discipline, and perseverance. Even though I didn't go professional, the leadership skills I developed as team captain have been essential in my management career."
+                </div>
+                <div class="memory-author">- James P., Business Administration Graduate 2021</div>
+                <div class="memory-club">Basketball Elite Club Alumni</div>
+            </div>
+            
+            <div class="memory-card">
+                <div class="memory-quote">
+                    "Through the Creative Writing Club, I published my first short story, won a university literary award, and gained the confidence to pursue my dream of becoming a novelist. My first book comes out next year!"
+                </div>
+                <div class="memory-author">- Anna C., Literature Graduate 2023</div>
+                <div class="memory-club">Creative Writing & Literature Club Alumni</div>
+            </div>
+            
+            <div class="memory-card">
+                <div class="memory-quote">
+                    "The Science Club opened doors I never knew existed. Presenting my research at the annual symposium led to an internship opportunity that turned into my current PhD program. Science club changed my life trajectory!"
+                </div>
+                <div class="memory-author">- Robert H., Chemistry Graduate 2022</div>
+                <div class="memory-club">Chemistry Lab Enthusiasts Alumni</div>
+            </div>
+        </div>
+        
+        <div class="call-to-action">
+            <h3>Your Story Could Be Next!</h3>
+            <p>These are just some of the amazing stories from our club alumni. What will your club story be?</p>
+            <button class="cta-button" onclick="scrollToClubs()">Start Your Journey Today ↑</button>
+        </div>
+    </div>
+
     <script>
         let currentDropdown = null;
 
@@ -733,6 +1148,12 @@ $conn->close();
             }, 3000);
         }
 
+        function scrollToClubs() {
+            document.querySelector('.image-gallery').scrollIntoView({
+                behavior: 'smooth'
+            });
+        }
+
         // Close dropdown when clicking overlay
         document.getElementById('dropdownOverlay').addEventListener('click', function() {
             if (currentDropdown) {
@@ -760,6 +1181,17 @@ $conn->close();
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-section">
+                <h3>About Us</h3>
+                <p>The School Club Management System is dedicated to fostering student engagement and personal growth through organized extracurricular activities. Since our establishment, we have been the bridge connecting students with their passions and helping them discover new interests.</p>
+
+                <p>Our platform serves as the central hub for all club activities, bringing together diverse communities of learners who share common interests in academics, arts, sciences, and sports.</p>
+                
+                <p><strong>Our Mission:</strong> To enrich the university experience by providing students with opportunities to develop leadership skills, build meaningful relationships, and pursue their passions beyond the classroom.</p>
+                
+                <p><strong>Our Vision:</strong> To create a vibrant campus community where every student finds their place, develops their potential, and contributes to positive change.</p>
+            </div>
+            
+            <div class="footer-section">
                 <h3>Contact Information</h3>
                 <p>For any inquiries about our clubs, events, or membership, feel free to reach out to us:</p>
                 
@@ -783,7 +1215,8 @@ $conn->close();
                 <p>Visit our helpdesk for immediate assistance with club registrations, event information, and general support:</p>
                 
                 <ul>
-                    <li><strong>Main Campus:</strong>   Phase 1, Central Building, First Floo</li>
+                    <li><strong>Main Campus:</strong> Phase 1, Central Building, First Floor</li>
+                    <li><strong>Student Center:</strong> Phase 2, Strathmore Student Center, Second Floor</li>
                 </ul>
                 
                 <div class="contact-info">
@@ -792,7 +1225,7 @@ $conn->close();
                     Phase 2, Strathmore Student Center, Second Floor<br>
                 </div>
                 
-                <p style="margin-top: 15px;"><em>Our friendly staff are always ready to help you find the perfect club to join!</em></p>
+                <p style="margin-top: 15px;"><em>Our friendly staff are always ready to help you find the perfect club to join and answer any questions about campus activities!</em></p>
             </div>
         </div>
         
