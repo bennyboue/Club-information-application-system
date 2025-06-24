@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
             $validation_error = "School ID is required for students.";
         }
     } 
-    elseif ($role === 'club_patron') {
+    elseif ($role === 'club_manager') {
         if (strpos($school_id, '-') !== false) {
             list($id_part, $club_initials) = explode('-', $school_id, 2);
             if (!empty($id_part) && !empty($club_initials)) {
@@ -38,10 +38,10 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                 }
                 $club_stmt->close();
             } else {
-                $validation_error = "Club Patron format should be: ID-CLUB_INITIALS";
+                $validation_error = "Club Manager format should be: ID-CLUB_INITIALS";
             }
         } else {
-            $validation_error = "Club Patron format should be: ID-CLUB_INITIALS";
+            $validation_error = "Club Manager format should be: ID-CLUB_INITIALS";
         }
     } 
     elseif ($role === 'admin') {
