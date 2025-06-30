@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                 $validation_error = "Student School ID must contain only numbers.";
             }
         } 
-        elseif ($role === 'club_patron') {
+        elseif ($role === 'club_manager') {
             if (strpos($school_id, '-') !== false) {
                 list($id_part, $club_initials) = explode('-', $school_id, 2);
                 
@@ -44,10 +44,10 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                     }
                     $club_stmt->close();
                 } else {
-                    $validation_error = "Club Patron ID format: numbers-club_initials (e.g., 12345-SC)";
+                    $validation_error = "Club Manager ID format: numbers-club_initials (e.g., 12345-SC)";
                 }
             } else {
-                $validation_error = "Club Patron ID must be in format: ID-CLUBINITIALS (e.g., 12345-SC)";
+                $validation_error = "Club Manager ID must be in format: ID-CLUBINITIALS (e.g., 12345-SC)";
             }
         } 
         elseif ($role === 'admin') {
@@ -213,13 +213,6 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
             </p>
         <?php endif; ?>
 
-        <div class="info-box">
-            <strong>Registration Instructions:</strong>
-            <p><strong>Students:</strong> Enter your student ID (numbers only)</p>
-            <p><strong>Club Patrons:</strong> Use format: ID-CLUBINITIALS (e.g., 12345-SC)</p>
-            <p><strong>Admins:</strong> Use format: ID-SURNAME (e.g., 12345-Smith)</p>
-        </div>
-
         <form method="POST" action="">
             <input type="text" name="username" placeholder="Username" required>
             <input type="email" name="email" placeholder="Email" required>
@@ -228,7 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
             <select name="role" id="role" required onchange="updateSchoolIdPlaceholder()">
                 <option value="">-- Select Role --</option>
                 <option value="student">Student</option>
-                <option value="club_patron">Club Patron</option>
+                <option value="club_manager">Club Manager</option>
                 <option value="admin">School Admin</option>
             </select>
 
@@ -253,7 +246,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
                 case 'student':
                     schoolIdInput.placeholder = 'Student ID (numbers only, e.g., 12345)';
                     break;
-                case 'club_patron':
+                case 'club_manager':
                     schoolIdInput.placeholder = 'ID-CLUBINITIALS (e.g., 12345-SC)';
                     break;
                 case 'admin':

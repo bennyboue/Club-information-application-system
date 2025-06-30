@@ -77,73 +77,6 @@ $conn->close();
             border-radius: 5px;
             font-weight: bold;
         }
-         
-         .notifications-icon {
-            position: relative;
-            background-color: rgb(209, 120, 25);
-            color: #fff;
-            padding: 10px 18px;
-            text-decoration: none;
-            border-radius: 5%;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-left: 5px;
-            font-size: 20px;
-            width: 7.5px;
-            height: 18px;
-        }
-
-        .notifications-icon:hover {
-            background-color: rgb(150, 85, 10);
-            transform: scale(1.1);
-        }
-
-        .notification-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background-color: #ff4444;
-            color: white;
-            font-size: 11px;
-            font-weight: bold;
-            padding: 0px 0px;
-            border-radius: 3px;
-            min-width: 2px;
-            text-align: center;
-            line-height: 1.2;
-            border: 2px solid white;
-            display: none;
-        }
-
-        .notification-badge.show {
-            display: block;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-
-        .navbar-right {
-            display: flex;
-            align-items: center;
-        }
-
-        /* Bell icon using CSS */
-        .bell-icon {
-            width: 16px;
-            height: 16px;
-            position: relative;
-        }
-
-        .bell-icon::before {
-            content: '🔔';
-            font-size: 20px;
-        }
 
         .image-gallery {
             display: flex;
@@ -427,7 +360,7 @@ $conn->close();
 
         .encouragement-header {
             text-align: center;
-            color: rgb(209, 120, 25);
+            color: rgb(240, 129, 12);
             font-size: 28px;
             font-weight: bold;
             margin-bottom: 20px;
@@ -450,7 +383,7 @@ $conn->close();
         }
 
         .benefit-card {
-            background-color: white;
+            background-color: rgb(149, 140, 129);
             padding: 25px;
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -471,18 +404,19 @@ $conn->close();
 
         .benefit-title {
             font-weight: bold;
-            color: rgb(209, 120, 25);
+            color: rgb(123, 71, 14);
             font-size: 18px;
             margin-bottom: 10px;
         }
 
         .benefit-description {
-            color: #666;
+           color: rgb(255, 255, 255);
             font-size: 14px;
             line-height: 1.5;
         }
 
         .events-section {
+            color: rgb(255, 255, 255);
             background: linear-gradient(135deg, rgb(169, 153, 136), rgb(237, 222, 203));
             margin: 40px 20px;
             padding: 40px;
@@ -498,7 +432,7 @@ $conn->close();
         }
 
         .event-card {
-            background-color: white;
+            color: rgb(255, 255, 255);
             padding: 25px;
             border-radius: 12px;
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
@@ -512,19 +446,19 @@ $conn->close();
 
         .event-title {
             font-weight: bold;
-            color: rgb(209, 120, 25);
+            color: rgb(245, 131, 9);
             font-size: 20px;
             margin-bottom: 10px;
         }
 
         .event-club {
-            color: #666;
+            color: rgb(255, 255, 255);
             font-style: italic;
             margin-bottom: 15px;
         }
 
         .event-description {
-            color: #333;
+            color: rgb(255, 255, 255);
             line-height: 1.5;
             margin-bottom: 15px;
         }
@@ -589,6 +523,7 @@ $conn->close();
             border-radius: 10px;
             text-align: center;
             margin: 30px 0;
+            font-size: 27px; 
         }
 
         .cta-button {
@@ -610,13 +545,18 @@ $conn->close();
         }
 
         /* Footer Styles */
-        .footer {
-            background-color: rgb(237, 222, 203);
-            color: #333;
-            padding: 40px 0;
-            margin-top: 50px;
-            border-top: 3px solid rgb(209, 120, 25);
-        }
+       .footer {
+    background-image: url('download (1).jpeg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-color: rgb(237, 222, 203);
+    color: white;
+    padding: 40px 0;
+    margin-top: 50px;
+    border-top: 3px solid rgb(209, 120, 25);
+    position: relative;
+}
 
         .footer-content {
             max-width: 1200px;
@@ -625,6 +565,7 @@ $conn->close();
             grid-template-columns: 1fr 1fr 1fr;
             gap: 40px;
             padding: 0 30px;
+            font-size: 20px;
         }
 
         .footer-section h3 {
@@ -638,6 +579,7 @@ $conn->close();
         .footer-section p, .footer-section ul {
             margin: 10px 0;
             line-height: 1.6;
+            color: rgb(253, 6, 154);
         }
 
         .footer-section ul {
@@ -646,9 +588,11 @@ $conn->close();
         }
 
         .footer-section ul li {
+            background-color: rgb(209, 120, 25);
             margin: 8px 0;
             padding-left: 20px;
             position: relative;
+            color: white;
         }
 
         .footer-section ul li:before {
@@ -656,7 +600,7 @@ $conn->close();
             color: rgb(209, 120, 25);
             position: absolute;
             left: 0;
-            font-size: 12px;
+            font-size: 16px;
         }
 
         .contact-info {
@@ -670,7 +614,7 @@ $conn->close();
         .contact-info strong {
             display: block;
             margin-bottom: 5px;
-            font-size: 16px;
+            font-size: 20px;
         }
 
         .footer-bottom {
@@ -678,8 +622,8 @@ $conn->close();
             margin-top: 30px;
             padding-top: 20px;
             border-top: 1px solid rgb(209, 120, 25);
-            color: #666;
-            font-size: 14px;
+            color: white;
+            font-size: 22px;
         }
 
         @media (max-width: 768px) {
@@ -806,11 +750,6 @@ $conn->close();
                 <span class="user-welcome">
                     Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!
                 </span>
-                <a href="notifications.php" class="notifications-icon" title="Notifications">
-                    <span class="bell-icon"></span>
-                    <span class="notification-badge <?php echo $unread_count > 0 ? 'show' : ''; ?>">
-                        <?php echo $unread_count > 99 ? '99+' : $unread_count; ?>
-                    </span></a>
                 <?php if ($_SESSION['role'] === 'admin'): ?>
                     <a href="admin_dashboard.php">Admin Dashboard</a>
                 <?php elseif ($_SESSION['role'] === 'club_patron'): ?>
@@ -1081,7 +1020,7 @@ $conn->close();
     <div class="memories-section">
         <h2 class="encouragement-header">💭 Memorable Moments & Student Testimonials 💭</h2>
         <div class="encouragement-content">
-            <p>Don't just take our word for it - hear from students whose lives have been transformed by their club experiences!</p>
+            <p class="white-text">Don't just take our word for it - hear from students whose lives have been transformed by their club experiences!</p>
         </div>
         
         <div class="memories-grid">

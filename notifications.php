@@ -1,8 +1,8 @@
 <?php
 session_start();
 
-// Redirect to login if not logged in
-if (!isset($_SESSION['id'])) {
+// Redirect to login if not logged in - FIXED SESSION VARIABLE
+if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
@@ -12,11 +12,10 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-$id = $_SESSION['id'];
+// FIXED: Use 'user_id' instead of 'id'
+$user_id = $_SESSION['user_id'];
 $username = $_SESSION['username'];
-
-// Include notifications functions
-require_once 'notifications_functions.php';
+$user_role = $_SESSION['role'] ?? 'student';
 
 // Handle pagination
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
@@ -28,73 +27,230 @@ $filter_type = isset($_GET['type']) ? $_GET['type'] : 'all';
 $filter_status = isset($_GET['status']) ? $_GET['status'] : 'all';
 $filter_club = isset($_GET['club']) ? intval($_GET['club']) : 0;
 
-// Build WHERE clause based on filters
-$where_conditions = ["n.id = ?"];
+// Get user's club memberships
+$user_clubs_query = "SELECT club_id FROM memberships WHERE user_id = ? AND status = 'approved'";
+$user_clubs_stmt = $conn->prepare($user_clubs_query);
+$user_clubs_stmt->bind_param("i", $user_id);
+$user_clubs_stmt->execute();
+$user_clubs_result = $user_clubs_stmt->get_result();
+$user_club_ids = [];
+while ($row = $user_clubs_result->fetch_assoc()) {
+    $user_club_ids[] = $row['club_id'];
+}
+
+// Create a comprehensive notifications query that includes:
+// 1. Direct user notifications (from user_notifications table)
+// 2. Club announcements for clubs the user is a member of
+// 3. System announcements targeted at students or all users
+// 4. General announcements that are public
+
+$notifications_query = "
+    (
+        -- Direct user notifications
+        SELECT 
+            n.id,
+            n.title,
+            n.message as content,
+            n.type,
+            n.created_at,
+            n.expires_at,
+            c.name as club_name,
+            c.initials as club_initials,
+            un.is_read,
+            un.read_at,
+            'user_notification' as source_type,
+            u.username as created_by_name
+        FROM user_notifications un
+        JOIN notifications n ON un.notification_id = n.id
+        LEFT JOIN clubs c ON n.club_id = c.id
+        LEFT JOIN users u ON n.created_by = u.id
+        WHERE un.user_id = ? AND (n.expires_at IS NULL OR n.expires_at > NOW())
+    )
+    
+    UNION ALL
+    
+    (
+        -- Club announcements for user's clubs
+        SELECT 
+            a.id,
+            a.title,
+            a.content,
+            a.announcement_type as type,
+            a.created_at,
+            a.expire_date as expires_at,
+            c.name as club_name,
+            c.initials as club_initials,
+            0 as is_read,
+            NULL as read_at,
+            'club_announcement' as source_type,
+            u.username as created_by_name
+        FROM announcements a
+        JOIN clubs c ON a.club_id = c.id
+        LEFT JOIN users u ON a.created_by = u.id
+        WHERE a.club_id IN (" . implode(',', array_fill(0, count($user_club_ids), '?')) . ")
+        AND a.status = 'published'
+        AND a.is_public = 1
+        AND (a.expire_date IS NULL OR a.expire_date > NOW())
+        AND (a.publish_date IS NULL OR a.publish_date <= NOW())
+    )
+    
+    UNION ALL
+    
+    (
+        -- System announcements for students
+        SELECT 
+            sa.id,
+            sa.title,
+            sa.content,
+            sa.announcement_type as type,
+            sa.created_at,
+            sa.expire_date as expires_at,
+            NULL as club_name,
+            NULL as club_initials,
+            0 as is_read,
+            NULL as read_at,
+            'system_announcement' as source_type,
+            u.username as created_by_name
+        FROM system_announcements sa
+        LEFT JOIN users u ON sa.created_by = u.id
+        WHERE sa.status = 'published'
+        AND (sa.target_audience = 'all' OR sa.target_audience = 'students')
+        AND (sa.expire_date IS NULL OR sa.expire_date > NOW())
+        AND (sa.publish_date IS NULL OR sa.publish_date <= NOW())
+    )
+    
+    UNION ALL
+    
+    (
+        -- General public announcements (not club-specific)
+        SELECT 
+            a.id,
+            a.title,
+            a.content,
+            a.announcement_type as type,
+            a.created_at,
+            a.expire_date as expires_at,
+            NULL as club_name,
+            NULL as club_initials,
+            0 as is_read,
+            NULL as read_at,
+            'general_announcement' as source_type,
+            u.username as created_by_name
+        FROM announcements a
+        LEFT JOIN users u ON a.created_by = u.id
+        WHERE a.club_id IS NULL
+        AND a.status = 'published'
+        AND a.is_public = 1
+        AND (a.expire_date IS NULL OR a.expire_date > NOW())
+        AND (a.publish_date IS NULL OR a.publish_date <= NOW())
+    )
+";
+
+// Build the final query with filters
+$final_query = "SELECT * FROM ($notifications_query) as all_notifications WHERE 1=1";
 $params = [$user_id];
 $param_types = "i";
 
+// Add user club IDs to params if user has clubs
+if (!empty($user_club_ids)) {
+    foreach ($user_club_ids as $club_id) {
+        $params[] = $club_id;
+        $param_types .= "i";
+    }
+} else {
+    // If user has no clubs, modify the query to avoid empty IN clause
+    $notifications_query = str_replace(
+        "WHERE a.club_id IN (" . implode(',', array_fill(0, count($user_club_ids), '?')) . ")",
+        "WHERE 1=0", // No results for club announcements
+        $notifications_query
+    );
+    $final_query = "SELECT * FROM ($notifications_query) as all_notifications WHERE 1=1";
+    $params = [$user_id];
+    $param_types = "i";
+}
+
+// Apply filters
 if ($filter_type !== 'all') {
-    $where_conditions[] = "n.type = ?";
+    $final_query .= " AND type = ?";
     $params[] = $filter_type;
     $param_types .= "s";
 }
 
 if ($filter_status !== 'all') {
     if ($filter_status === 'read') {
-        $where_conditions[] = "n.is_read = 1";
+        $final_query .= " AND is_read = 1";
     } else {
-        $where_conditions[] = "n.is_read = 0";
+        $final_query .= " AND is_read = 0";
     }
 }
 
 if ($filter_club > 0) {
-    $where_conditions[] = "n.club_id = ?";
+    $final_query .= " AND club_name = (SELECT name FROM clubs WHERE id = ?)";
     $params[] = $filter_club;
     $param_types .= "i";
 }
 
-$where_clause = implode(" AND ", $where_conditions);
+// Add ordering and pagination
+$final_query .= " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+$params[] = $per_page;
+$params[] = $offset;
+$param_types .= "ii";
+
+// Execute the query
+$stmt = $conn->prepare($final_query);
+if (!empty($params)) {
+    $stmt->bind_param($param_types, ...$params);
+}
+$stmt->execute();
+$notifications_result = $stmt->get_result();
 
 // Get total count for pagination
-$count_query = "
-    SELECT COUNT(*) as total 
-    FROM notifications n 
-    LEFT JOIN clubs c ON n.club_id = c.id 
-    WHERE {$where_clause}
-";
+$count_query = "SELECT COUNT(*) as total FROM ($notifications_query) as all_notifications WHERE 1=1";
+$count_params = [$user_id];
+$count_param_types = "i";
+
+if (!empty($user_club_ids)) {
+    foreach ($user_club_ids as $club_id) {
+        $count_params[] = $club_id;
+        $count_param_types .= "i";
+    }
+}
+
+// Apply same filters to count query
+if ($filter_type !== 'all') {
+    $count_query .= " AND type = ?";
+    $count_params[] = $filter_type;
+    $count_param_types .= "s";
+}
+
+if ($filter_status !== 'all') {
+    if ($filter_status === 'read') {
+        $count_query .= " AND is_read = 1";
+    } else {
+        $count_query .= " AND is_read = 0";
+    }
+}
+
+if ($filter_club > 0) {
+    $count_query .= " AND club_name = (SELECT name FROM clubs WHERE id = ?)";
+    $count_params[] = $filter_club;
+    $count_param_types .= "i";
+}
 
 $count_stmt = $conn->prepare($count_query);
-if (!empty($params)) {
-    $count_stmt->bind_param($param_types, ...$params);
+if (!empty($count_params)) {
+    $count_stmt->bind_param($count_param_types, ...$count_params);
 }
 $count_stmt->execute();
 $total_notifications = $count_stmt->get_result()->fetch_assoc()['total'];
 $total_pages = ceil($total_notifications / $per_page);
-
-// Get notifications with pagination
-$notifications_query = "
-    SELECT n.*, c.name as club_name, c.initials as club_initials
-    FROM notifications n 
-    LEFT JOIN clubs c ON n.club_id = c.id 
-    WHERE {$where_clause}
-    ORDER BY n.created_at DESC 
-    LIMIT ? OFFSET ?
-";
-
-$notifications_stmt = $conn->prepare($notifications_query);
-$params[] = $per_page;
-$params[] = $offset;
-$param_types .= "ii";
-$notifications_stmt->bind_param($param_types, ...$params);
-$notifications_stmt->execute();
-$notifications_result = $notifications_stmt->get_result();
 
 // Get user's clubs for filter dropdown
 $clubs_stmt = $conn->prepare("
     SELECT c.id, c.name, c.initials 
     FROM clubs c 
     JOIN memberships m ON c.id = m.club_id 
-    WHERE m.user_id = ? 
+    WHERE m.user_id = ? AND m.status = 'approved'
     ORDER BY c.name ASC
 ");
 $clubs_stmt->bind_param("i", $user_id);
@@ -102,17 +258,31 @@ $clubs_stmt->execute();
 $user_clubs = $clubs_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 // Get notification statistics
-$stats_stmt = $conn->prepare("
+$stats_query = "
     SELECT 
         COUNT(*) as total,
         SUM(CASE WHEN is_read = 0 THEN 1 ELSE 0 END) as unread,
         SUM(CASE WHEN type = 'event' THEN 1 ELSE 0 END) as events,
-        SUM(CASE WHEN type = 'announcement' THEN 1 ELSE 0 END) as announcements,
-        SUM(CASE WHEN type = 'membership' THEN 1 ELSE 0 END) as membership
-    FROM notifications 
-    WHERE user_id = ?
-");
-$stats_stmt->bind_param("i", $user_id);
+        SUM(CASE WHEN type = 'announcement' OR type = 'general' THEN 1 ELSE 0 END) as announcements,
+        SUM(CASE WHEN type = 'reminder' THEN 1 ELSE 0 END) as reminders,
+        SUM(CASE WHEN type = 'alert' OR type = 'urgent' THEN 1 ELSE 0 END) as alerts
+    FROM ($notifications_query) as all_notifications
+";
+
+$stats_params = [$user_id];
+$stats_param_types = "i";
+
+if (!empty($user_club_ids)) {
+    foreach ($user_club_ids as $club_id) {
+        $stats_params[] = $club_id;
+        $stats_param_types .= "i";
+    }
+}
+
+$stats_stmt = $conn->prepare($stats_query);
+if (!empty($stats_params)) {
+    $stats_stmt->bind_param($stats_param_types, ...$stats_params);
+}
 $stats_stmt->execute();
 $stats = $stats_stmt->get_result()->fetch_assoc();
 
@@ -120,10 +290,12 @@ $conn->close();
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Notifications - School Club Management</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Notifications - Club Management System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
             font-family: 'Times New Roman', Times, serif;
@@ -163,55 +335,57 @@ $conn->close();
             transform: scale(1.05);
         }
 
-        .container {
+        .dashboard-content {
+            padding: 30px;
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
         }
 
-        .page-header {
+        .welcome-header {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .welcome-header h1 {
+            color: rgb(209, 120, 25);
+            margin: 0 0 10px 0;
+            font-size: 28px;
+        }
+
+        /* Statistics Section */
+        .stats-section {
             background: #fff;
             border-radius: 10px;
             padding: 25px;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
 
-        .page-title {
-            color: rgb(209, 120, 25);
-            font-size: 28px;
-            margin: 0 0 10px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .page-subtitle {
-            color: #666;
-            margin: 0;
-        }
-
-        .stats-grid {
+        .stats-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(6, 1fr);
             gap: 15px;
-            margin: 20px 0;
+            text-align: center;
         }
 
-        .stat-card {
-            background: rgb(237, 222, 203);
+        .stat-item {
+            background-color: rgb(237, 222, 203);
             padding: 20px;
             border-radius: 8px;
-            text-align: center;
             transition: transform 0.2s ease;
+            border-left: 4px solid rgb(209, 120, 25);
         }
 
-        .stat-card:hover {
+        .stat-item:hover {
             transform: translateY(-2px);
         }
 
         .stat-number {
-            font-size: 24px;
+            font-size: 32px;
             font-weight: bold;
             color: rgb(209, 120, 25);
             margin-bottom: 5px;
@@ -220,100 +394,87 @@ $conn->close();
         .stat-label {
             color: #666;
             font-size: 14px;
+            font-weight: bold;
         }
 
+        /* Filters Section */
         .filters-section {
             background: #fff;
             border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-
-        .filters-title {
-            color: rgb(209, 120, 25);
-            font-size: 18px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
         .filters-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            align-items: end;
         }
 
         .filter-group {
             display: flex;
             flex-direction: column;
-            gap: 5px;
         }
 
-        .filter-label {
+        .filter-group label {
             font-weight: bold;
-            color: #333;
-            font-size: 14px;
+            color: rgb(209, 120, 25);
+            margin-bottom: 8px;
         }
 
-        .filter-select {
-            padding: 8px 12px;
+        .filter-group select {
+            padding: 10px;
             border: 2px solid rgb(237, 222, 203);
             border-radius: 5px;
-            background: white;
-            font-family: inherit;
-            transition: border-color 0.3s ease;
+            background-color: #fff;
+            font-family: 'Times New Roman', Times, serif;
+            color: #333;
         }
 
-        .filter-select:focus {
+        .filter-group select:focus {
             outline: none;
             border-color: rgb(209, 120, 25);
         }
 
-        .filter-actions {
+        .filter-buttons {
             display: flex;
             gap: 10px;
-            flex-wrap: wrap;
         }
 
         .btn {
             background-color: rgb(209, 120, 25);
             color: white;
-            padding: 10px 15px;
+            padding: 10px 20px;
             text-decoration: none;
-            border: none;
             border-radius: 5px;
+            border: none;
             cursor: pointer;
-            font-family: inherit;
+            font-family: 'Times New Roman', Times, serif;
             font-size: 14px;
             transition: background-color 0.3s ease;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
         }
 
         .btn:hover {
             background-color: rgb(150, 85, 10);
         }
 
-        .btn-secondary {
-            background-color: #6c757d;
+        .btn-outline {
+            background-color: transparent;
+            color: rgb(209, 120, 25);
+            border: 2px solid rgb(209, 120, 25);
         }
 
-        .btn-secondary:hover {
-            background-color: #545b62;
+        .btn-outline:hover {
+            background-color: rgb(209, 120, 25);
+            color: white;
         }
 
-        .btn-danger {
-            background-color: #dc3545;
-        }
-
-        .btn-danger:hover {
-            background-color: #c82333;
-        }
-
+        /* Notifications Section */
         .notifications-section {
             background: #fff;
             border-radius: 10px;
@@ -322,34 +483,21 @@ $conn->close();
             margin-bottom: 20px;
         }
 
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
         .section-title {
             color: rgb(209, 120, 25);
-            font-size: 20px;
-            margin: 0;
+            font-size: 24px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgb(209, 120, 25);
+            padding-bottom: 10px;
             display: flex;
             align-items: center;
             gap: 10px;
-        }
-
-        .bulk-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
         }
 
         .notifications-list {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 15px;
         }
 
         .notification-item {
@@ -357,12 +505,8 @@ $conn->close();
             border-radius: 8px;
             padding: 20px;
             border-left: 4px solid rgb(209, 120, 25);
-            cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
-            display: flex;
-            align-items: flex-start;
-            gap: 15px;
         }
 
         .notification-item.unread {
@@ -372,11 +516,7 @@ $conn->close();
 
         .notification-item:hover {
             transform: translateX(5px);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .notification-checkbox {
-            margin-top: 2px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
         .notification-content {
@@ -385,692 +525,385 @@ $conn->close();
 
         .notification-header {
             display: flex;
-            justify-content: space-between;
+            justify-content: between;
             align-items: flex-start;
-            margin-bottom: 8px;
-            gap: 10px;
+            margin-bottom: 10px;
         }
 
         .notification-title {
-            font-weight: 600;
-            color: rgb(209, 120, 25);
-            font-size: 16px;
-            margin: 0;
-        }
-
-        .notification-status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .status-badge {
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 12px;
             font-weight: bold;
+            color: rgb(209, 120, 25);
+            font-size: 18px;
+            margin-bottom: 8px;
+            flex: 1;
         }
 
-        .status-unread {
-            background: #dc3545;
-            color: white;
+        .notification-badges {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
         }
 
-        .status-read {
-            background: #28a745;
-            color: white;
-        }
-
-        .type-badge {
-            background: rgb(209, 120, 25);
-            color: white;
-            padding: 2px 8px;
+        .notification-badge {
+            padding: 4px 8px;
             border-radius: 4px;
             font-size: 12px;
-            text-transform: capitalize;
+            font-weight: bold;
+            color: white;
+        }
+
+        .badge-new {
+            background-color: #dc3545;
+            animation: pulse 2s infinite;
+        }
+
+        .badge-type {
+            background-color: rgb(209, 120, 25);
+        }
+
+        .badge-club {
+            background-color: #17a2b8;
+        }
+
+        .badge-source {
+            background-color: #6c757d;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
         }
 
         .notification-message {
             color: #333;
-            margin-bottom: 10px;
+            font-size: 16px;
+            margin-bottom: 15px;
             line-height: 1.5;
         }
 
         .notification-meta {
             display: flex;
-            gap: 15px;
-            font-size: 12px;
+            gap: 20px;
+            font-size: 14px;
             color: #666;
             flex-wrap: wrap;
         }
 
-        .club-tag {
-            background: rgb(209, 120, 25);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .notification-actions {
+        .meta-item {
             display: flex;
-            gap: 8px;
-            margin-top: 10px;
+            align-items: center;
+            gap: 5px;
         }
 
-        .action-btn {
-            padding: 4px 8px;
-            font-size: 12px;
-            border-radius: 4px;
-            text-decoration: none;
-            transition: all 0.2s ease;
+        .no-notifications {
+            text-align: center;
+            color: #666;
+            padding: 60px 20px;
+            font-style: italic;
         }
 
-        .action-btn:hover {
-            transform: translateY(-1px);
+        .no-notifications i {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #ccc;
         }
 
+        .no-notifications h3 {
+            color: rgb(209, 120, 25);
+            margin-bottom: 10px;
+        }
+
+        /* Pagination */
         .pagination {
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 10px;
-            margin: 20px 0;
-            flex-wrap: wrap;
-        }
-
-        .pagination a, .pagination span {
-            padding: 8px 12px;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: all 0.3s ease;
+            margin-top: 30px;
         }
 
         .pagination a {
-            background: rgb(237, 222, 203);
+            background-color: rgb(237, 222, 203);
             color: rgb(209, 120, 25);
-        }
-
-        .pagination a:hover {
-            background: rgb(209, 120, 25);
-            color: white;
-        }
-
-        .pagination .current {
-            background: rgb(209, 120, 25);
-            color: white;
-            font-weight: bold;
-        }
-
-        .no-notifications {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-
-        .no-notifications-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-        }
-
-        .success-message, .error-message {
             padding: 10px 15px;
+            text-decoration: none;
             border-radius: 5px;
-            margin-bottom: 15px;
-            display: none;
+            border: 2px solid rgb(209, 120, 25);
+            transition: all 0.3s ease;
         }
 
-        .success-message {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+        .pagination a:hover,
+        .pagination a.active {
+            background-color: rgb(209, 120, 25);
+            color: white;
         }
 
-        .error-message {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+        .pagination .disabled {
+            opacity: 0.5;
+            pointer-events: none;
         }
 
+        /* Responsive Design */
         @media (max-width: 768px) {
-            .container {
-                padding: 10px;
+            .stats-row {
+                grid-template-columns: repeat(3, 1fr);
             }
 
             .filters-grid {
                 grid-template-columns: 1fr;
+                gap: 15px;
             }
 
-            .stats-grid {
+            .filter-buttons {
+                justify-content: center;
+            }
+
+            .notification-meta {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .notification-badges {
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-row {
                 grid-template-columns: repeat(2, 1fr);
             }
 
-            .section-header {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .bulk-actions {
-                justify-content: center;
+            .dashboard-content {
+                padding: 15px;
             }
 
             .notification-item {
                 padding: 15px;
             }
-
-            .notification-header {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .notification-meta {
-                flex-direction: column;
-                gap: 5px;
-            }
-
-            .pagination {
-                gap: 5px;
-            }
-
-            .pagination a, .pagination span {
-                padding: 6px 10px;
-                font-size: 14px;
-            }
         }
     </style>
 </head>
 <body>
-
-<div class="navbar">
-    <div class="logo">
-        <a href="home.php" style="color: black; text-decoration: none;">School Club System</a>
-    </div>
-    <div>
-        <span style="color:black; font-weight:bold;">Hello, <?php echo htmlspecialchars($username); ?>!</span>
-        <a href="student_dashboard.php">Dashboard</a>
-        <a href="home.php">Browse Clubs</a>
-        <a href="logout.php">Logout</a>
-    </div>
-</div>
-
-<div class="container">
-    <div class="page-header">
-        <h1 class="page-title">📬 Notifications</h1>
-        <p class="page-subtitle">Manage your club notifications and stay updated</p>
-        
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number"><?php echo $stats['total']; ?></div>
-                <div class="stat-label">Total Notifications</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number"><?php echo $stats['unread']; ?></div>
-                <div class="stat-label">Unread</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number"><?php echo $stats['events']; ?></div>
-                <div class="stat-label">Events</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number"><?php echo $stats['announcements']; ?></div>
-                <div class="stat-label">Announcements</div>
-            </div>
+    <div class="navbar">
+        <div class="logo">
+            <i class="fas fa-bell"></i> All Notifications
+        </div>
+        <div>
+            <a href="dashboard.php">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
         </div>
     </div>
 
-    <div class="success-message" id="successMessage"></div>
-    <div class="error-message" id="errorMessage"></div>
+    <div class="dashboard-content">
+        <div class="welcome-header">
+            <h1><i class="fas fa-bell"></i> Notification Center</h1>
+            <p class="welcome-subtitle">Stay updated with all your notifications and announcements</p>
+        </div>
 
-    <div class="filters-section">
-        <h3 class="filters-title">🔍 Filter Notifications</h3>
-        <form method="GET" action="notifications.php" id="filtersForm">
-            <div class="filters-grid">
-                <div class="filter-group">
-                    <label class="filter-label">Status:</label>
-                    <select name="status" class="filter-select">
-                        <option value="all" <?php echo $filter_status === 'all' ? 'selected' : ''; ?>>All Status</option>
-                        <option value="unread" <?php echo $filter_status === 'unread' ? 'selected' : ''; ?>>Unread Only</option>
-                        <option value="read" <?php echo $filter_status === 'read' ? 'selected' : ''; ?>>Read Only</option>
-                    </select>
+        <!-- Statistics Section -->
+        <div class="stats-section">
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div class="stat-number"><?php echo $stats['total']; ?></div>
+                    <div class="stat-label">Total</div>
                 </div>
-
-                <div class="filter-group">
-                    <label class="filter-label">Type:</label>
-                    <select name="type" class="filter-select">
-                        <option value="all" <?php echo $filter_type === 'all' ? 'selected' : ''; ?>>All Types</option>
-                        <option value="event" <?php echo $filter_type === 'event' ? 'selected' : ''; ?>>Events</option>
-                        <option value="announcement" <?php echo $filter_type === 'announcement' ? 'selected' : ''; ?>>Announcements</option>
-                        <option value="membership" <?php echo $filter_type === 'membership' ? 'selected' : ''; ?>>Membership</option>
-                        <option value="system" <?php echo $filter_type === 'system' ? 'selected' : ''; ?>>System</option>
-                    </select>
+                <div class="stat-item">
+                    <div class="stat-number" style="color: #dc3545;"><?php echo $stats['unread']; ?></div>
+                    <div class="stat-label">Unread</div>
                 </div>
-
-                <div class="filter-group">
-                    <label class="filter-label">Club:</label>
-                    <select name="club" class="filter-select">
-                        <option value="0">All Clubs</option>
-                        <?php foreach ($user_clubs as $club): ?>
-                            <option value="<?php echo $club['id']; ?>" <?php echo $filter_club === $club['id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($club['name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                <div class="stat-item">
+                    <div class="stat-number" style="color: #28a745;"><?php echo $stats['events']; ?></div>
+                    <div class="stat-label">Events</div>
                 </div>
-            </div>
-
-            <div class="filter-actions">
-                <button type="submit" class="btn">🔍 Apply Filters</button>
-                <a href="notifications.php" class="btn btn-secondary">🔄 Clear Filters</a>
-            </div>
-        </form>
-    </div>
-
-    <div class="notifications-section">
-        <div class="section-header">
-            <h3 class="section-title">📋 Your Notifications</h3>
-            <div class="bulk-actions">
-                <button onclick="selectAll()" class="btn btn-secondary">☑️ Select All</button>
-                <button onclick="markSelectedAsRead()" class="btn">✅ Mark as Read</button>
-                <button onclick="deleteSelected()" class="btn btn-danger">🗑️ Delete Selected</button>
+                <div class="stat-item">
+                    <div class="stat-number" style="color: #17a2b8;"><?php echo $stats['announcements']; ?></div>
+                    <div class="stat-label">Announcements</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" style="color: #ffc107;"><?php echo $stats['reminders']; ?></div>
+                    <div class="stat-label">Reminders</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" style="color: #6c757d;"><?php echo $stats['alerts']; ?></div>
+                    <div class="stat-label">Alerts</div>
+                </div>
             </div>
         </div>
 
-        <?php if ($notifications_result->num_rows > 0): ?>
-            <div class="notifications-list">
-                <?php while ($notification = $notifications_result->fetch_assoc()): ?>
-                    <?php 
-                    $read_class = $notification['is_read'] ? 'read' : 'unread';
-                    $time_ago = timeAgo($notification['created_at']);
-                    ?>
-                    <div class="notification-item <?php echo $read_class; ?>" 
-                         data-notification-id="<?php echo $notification['id']; ?>">
-                        
-                        <input type="checkbox" class="notification-checkbox" 
-                               value="<?php echo $notification['id']; ?>" 
-                               onchange="updateBulkActions()">
-                        
-                        <div class="notification-content">
-                            <div class="notification-header">
-                                <h4 class="notification-title"><?php echo htmlspecialchars($notification['title']); ?></h4>
-                                <div class="notification-status">
-                                    <span class="type-badge"><?php echo ucfirst($notification['type']); ?></span>
-                                    <span class="status-badge status-<?php echo $notification['is_read'] ? 'read' : 'unread'; ?>">
-                                        <?php echo $notification['is_read'] ? 'Read' : 'Unread'; ?>
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <div class="notification-message">
-                                <?php echo nl2br(htmlspecialchars($notification['message'])); ?>
-                            </div>
-                            
-                            <div class="notification-meta">
-                                <?php if ($notification['club_name']): ?>
-                                    <span class="club-tag">
-                                        📍 <?php echo htmlspecialchars($notification['club_initials'] ?? $notification['club_name']); ?>
-                                    </span>
-                                <?php endif; ?>
-                                <span>🕒 <?php echo $time_ago; ?></span>
-                                <span>📅 <?php echo date('M j, Y g:i A', strtotime($notification['created_at'])); ?></span>
-                            </div>
-                            
-                            <div class="notification-actions">
-                                <?php if (!$notification['is_read']): ?>
-                                    <button onclick="markAsRead(<?php echo $notification['id']; ?>)" 
-                                            class="action-btn btn">Mark as Read</button>
-                                <?php endif; ?>
-                                <button onclick="deleteNotification(<?php echo $notification['id']; ?>)" 
-                                        class="action-btn btn btn-danger">Delete</button>
-                                <?php if ($notification['club_id']): ?>
-                                    <a href="club_details.php?id=<?php echo $notification['club_id']; ?>" 
-                                       class="action-btn btn btn-secondary">View Club</a>
-                                <?php endif; ?>
-                            </div>
+        <!-- Filters Section -->
+        <div class="filters-section">
+            <form method="GET">
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label for="type">Filter by Type</label>
+                        <select name="type" id="type">
+                            <option value="all" <?php echo $filter_type === 'all' ? 'selected' : ''; ?>>All Types</option>
+                            <option value="announcement" <?php echo $filter_type === 'announcement' ? 'selected' : ''; ?>>Announcements</option>
+                            <option value="event" <?php echo $filter_type === 'event' ? 'selected' : ''; ?>>Events</option>
+                            <option value="reminder" <?php echo $filter_type === 'reminder' ? 'selected' : ''; ?>>Reminders</option>
+                            <option value="alert" <?php echo $filter_type === 'alert' ? 'selected' : ''; ?>>Alerts</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="status">Filter by Status</label>
+                        <select name="status" id="status">
+                            <option value="all" <?php echo $filter_status === 'all' ? 'selected' : ''; ?>>All</option>
+                            <option value="unread" <?php echo $filter_status === 'unread' ? 'selected' : ''; ?>>Unread</option>
+                            <option value="read" <?php echo $filter_status === 'read' ? 'selected' : ''; ?>>Read</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="club">Filter by Club</label>
+                        <select name="club" id="club">
+                            <option value="0">All Clubs</option>
+                            <?php foreach ($user_clubs as $club): ?>
+                                <option value="<?php echo $club['id']; ?>" <?php echo $filter_club == $club['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($club['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <div class="filter-buttons">
+                            <button type="submit" class="btn">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                            <a href="?" class="btn btn-outline">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
                         </div>
                     </div>
-                <?php endwhile; ?>
+                </div>
+            </form>
+        </div>
+
+        <!-- Notifications Section -->
+        <div class="notifications-section">
+            <h3 class="section-title">
+                <i class="fas fa-inbox"></i> Your Notifications
+                <?php if ($stats['unread'] > 0): ?>
+                    <span class="badge-new unread-badge"><?php echo $stats['unread']; ?></span>
+                <?php endif; ?>
+            </h3>
+
+            <div class="notifications-list">
+                <?php if ($notifications_result->num_rows > 0): ?>
+                    <?php while ($notification = $notifications_result->fetch_assoc()): ?>
+                        <div class="notification-item <?php echo $notification['is_read'] ? '' : 'unread'; ?>">
+                            <div class="notification-content">
+                                <div class="notification-title">
+                                    <?php echo htmlspecialchars($notification['title']); ?>
+                                </div>
+                                
+                                <div class="notification-badges">
+                                    <?php if (!$notification['is_read']): ?>
+                                        <span class="notification-badge badge-new">NEW</span>
+                                    <?php endif; ?>
+                                    <span class="notification-badge badge-type">
+                                        <?php echo ucfirst($notification['type']); ?>
+                                    </span>
+                                    <?php if ($notification['club_name']): ?>
+                                        <span class="notification-badge badge-club">
+                                            <i class="fas fa-users"></i> <?php echo htmlspecialchars($notification['club_name']); ?>
+                                        </span>
+                                    <?php endif; ?>
+                                    <span class="notification-badge badge-source">
+                                        <?php echo ucfirst(str_replace('_', ' ', $notification['source_type'])); ?>
+                                    </span>
+                                </div>
+                                
+                                <div class="notification-message">
+                                    <?php echo nl2br(htmlspecialchars($notification['content'])); ?>
+                                </div>
+                                
+                                <div class="notification-meta">
+                                    <div class="meta-item">
+                                        <i class="fas fa-clock"></i>
+                                        <?php echo date('M j, Y g:i A', strtotime($notification['created_at'])); ?>
+                                    </div>
+                                    <?php if ($notification['created_by_name']): ?>
+                                        <div class="meta-item">
+                                            <i class="fas fa-user"></i>
+                                            <?php echo htmlspecialchars($notification['created_by_name']); ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if ($notification['expires_at']): ?>
+                                        <div class="meta-item">
+                                            <i class="fas fa-calendar-times"></i>
+                                            Expires: <?php echo date('M j, Y', strtotime($notification['expires_at'])); ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <div class="no-notifications">
+                        <i class="fas fa-bell-slash"></i>
+                        <h3>No notifications found</h3>
+                        <p>You don't have any notifications matching your current filters.</p>
+                        <a href="?" class="btn">Reset Filters</a>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <!-- Pagination -->
             <?php if ($total_pages > 1): ?>
                 <div class="pagination">
                     <?php if ($page > 1): ?>
-                        <a href="?page=<?php echo $page-1; ?>&<?php echo http_build_query(array_filter(['type' => $filter_type !== 'all' ? $filter_type : null, 'status' => $filter_status !== 'all' ? $filter_status : null, 'club' => $filter_club > 0 ? $filter_club : null])); ?>">
-                            ← Previous
+                        <a href="?page=<?= $page-1 ?><?= $filter_type !== 'all' ? '&type='.$filter_type : '' ?><?= $filter_status !== 'all' ? '&status='.$filter_status : '' ?><?= $filter_club > 0 ? '&club='.$filter_club : '' ?>">
+                            <i class="fas fa-chevron-left"></i> Previous
                         </a>
+                    <?php else: ?>
+                        <span class="disabled"><i class="fas fa-chevron-left"></i> Previous</span>
                     <?php endif; ?>
 
-                    <?php
-                    $start_page = max(1, $page - 2);
-                    $end_page = min($total_pages, $page + 2);
-                    
-                    for ($i = $start_page; $i <= $end_page; $i++):
-                    ?>
-                        <?php if ($i == $page): ?>
-                            <span class="current"><?php echo $i; ?></span>
-                        <?php else: ?>
-                            <a href="?page=<?php echo $i; ?>&<?php echo http_build_query(array_filter(['type' => $filter_type !== 'all' ? $filter_type : null, 'status' => $filter_status !== 'all' ? $filter_status : null, 'club' => $filter_club > 0 ? $filter_club : null])); ?>">
-                                <?php echo $i; ?>
-                            </a>
-                        <?php endif; ?>
+                    <?php for ($i = max(1, $page - 2); $i <= min($page + 2, $total_pages); $i++): ?>
+                        <a href="?page=<?= $i ?><?= $filter_type !== 'all' ? '&type='.$filter_type : '' ?><?= $filter_status !== 'all' ? '&status='.$filter_status : '' ?><?= $filter_club > 0 ? '&club='.$filter_club : '' ?>" 
+                           class="<?= $i == $page ? 'active' : '' ?>">
+                            <?= $i ?>
+                        </a>
                     <?php endfor; ?>
 
                     <?php if ($page < $total_pages): ?>
-                        <a href="?page=<?php echo $page+1; ?>&<?php echo http_build_query(array_filter(['type' => $filter_type !== 'all' ? $filter_type : null, 'status' => $filter_status !== 'all' ? $filter_status : null, 'club' => $filter_club > 0 ? $filter_club : null])); ?>">
-                            Next →
+                        <a href="?page=<?= $page+1 ?><?= $filter_type !== 'all' ? '&type='.$filter_type : '' ?><?= $filter_status !== 'all' ? '&status='.$filter_status : '' ?><?= $filter_club > 0 ? '&club='.$filter_club : '' ?>">
+                            Next <i class="fas fa-chevron-right"></i>
                         </a>
+                    <?php else: ?>
+                        <span class="disabled">Next <i class="fas fa-chevron-right"></i></span>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
-
-        <?php else: ?>
-            <div class="no-notifications">
-                <div class="no-notifications-icon">📭</div>
-                <h3>No notifications found</h3>
-                <p>
-                    <?php if ($filter_type !== 'all' || $filter_status !== 'all' || $filter_club > 0): ?>
-                        Try adjusting your filters to see more notifications.
-                    <?php else: ?>
-                        You don't have any notifications yet. Join some clubs to start receiving updates!
-                    <?php endif; ?>
-                </p>
-                <?php if ($filter_type !== 'all' || $filter_status !== 'all' || $filter_club > 0): ?>
-                    <a href="notifications.php" class="btn">Clear Filters</a>
-                <?php else: ?>
-                    <a href="home.php" class="btn">Browse Clubs</a>
-                <?php endif; ?>
-            </div>
-        <?php endif; ?>
+        </div>
     </div>
-</div>
 
-<script>
-let selectedNotifications = [];
-
-function updateBulkActions() {
-    const checkboxes = document.querySelectorAll('.notification-checkbox:checked');
-    selectedNotifications = Array.from(checkboxes).map(cb => parseInt(cb.value));
-    
-    const bulkActions = document.querySelector('.bulk-actions');
-    const hasSelected = selectedNotifications.length > 0;
-    
-    bulkActions.style.opacity = hasSelected ? '1' : '0.6';
-}
-
-function selectAll() {
-    const checkboxes = document.querySelectorAll('.notification-checkbox');
-    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-    
-    checkboxes.forEach(cb => cb.checked = !allChecked);
-    updateBulkActions();
-}
-
-function markAsRead(notificationId) {
-    const ids = notificationId ? [notificationId] : selectedNotifications;
-    
-    if (ids.length === 0) {
-        showMessage('Please select notifications to mark as read.', 'error');
-        return;
-    }
-    
-    fetch('mark_notification_read.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            notification_ids: ids
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showMessage('Notifications marked as read successfully!', 'success');
-            
-            // Update UI
-            ids.forEach(id => {
-                const item = document.querySelector(`[data-notification-id="${id}"]`);
-                if (item) {
-                    item.classList.remove('unread');
-                    item.classList.add('read');
-                    
-                    // Update status badge
-                    const statusBadge = item.querySelector('.status-badge');
-                    if (statusBadge) {
-                        statusBadge.className = 'status-badge status-read';
-                        statusBadge.textContent = 'Read';
-                    }
-                    
-                    // Remove mark as read button
-                    const markReadBtn = item.querySelector('.action-btn:not(.btn-danger):not(.btn-secondary)');
-                    if (markReadBtn) {
-                        markReadBtn.remove();
+    <script>
+        // Add click handler to mark notifications as read
+        document.querySelectorAll('.notification-item.unread').forEach(item => {
+            item.addEventListener('click', function() {
+                this.classList.remove('unread');
+                
+                // Find and remove the NEW badge
+                const badge = this.querySelector('.badge-new');
+                if (badge) {
+                    badge.remove();
+                }
+                
+                // Update unread count in stats
+                const unreadCount = document.querySelector('.stat-number[style*="color: #dc3545"]');
+                if (unreadCount) {
+                    const count = parseInt(unreadCount.textContent);
+                    if (count > 1) {
+                        unreadCount.textContent = count - 1;
+                    } else {
+                        unreadCount.textContent = '0';
+                        document.querySelector('.unread-badge').remove();
                     }
                 }
             });
-            
-            // Clear selections
-            document.querySelectorAll('.notification-checkbox:checked').forEach(cb => cb.checked = false);
-            updateBulkActions();
-            
-            // Refresh page after 2 seconds to update stats
-            setTimeout(() => location.reload(), 2000);
-        } else {
-            showMessage('Error marking notifications as read: ' + (data.message || 'Unknown error'), 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showMessage('Error marking notifications as read. Please try again.', 'error');
-}
-</script>
-
+        });
+    </script>
 </body>
 </html>
-
-function markSelectedAsRead() {
-    markAsRead();
-}
-
-function deleteNotification(notificationId) {
-    if (!confirm('Are you sure you want to delete this notification?')) {
-        return;
-    }
-    
-    const ids = notificationId ? [notificationId] : selectedNotifications;
-    
-    if (ids.length === 0) {
-        showMessage('Please select notifications to delete.', 'error');
-        return;
-    }
-    
-    fetch('delete_notifications.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            notification_ids: ids
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showMessage('Notifications deleted successfully!', 'success');
-            
-            // Remove items from UI
-            ids.forEach(id => {
-                const item = document.querySelector(`[data-notification-id="${id}"]`);
-                if (item) {
-                    item.style.transition = 'all 0.3s ease';
-                    item.style.opacity = '0';
-                    item.style.transform = 'translateX(-100%)';
-                    setTimeout(() => item.remove(), 300);
-                }
-            });
-            
-            // Clear selections
-            document.querySelectorAll('.notification-checkbox:checked').forEach(cb => cb.checked = false);
-            updateBulkActions();
-            
-            // Refresh page after 2 seconds to update stats and pagination
-            setTimeout(() => location.reload(), 2000);
-        } else {
-            showMessage('Error deleting notifications: ' + (data.message || 'Unknown error'), 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showMessage('Error deleting notifications. Please try again.', 'error');
-    });
-}
-
-function deleteSelected() {
-    if (selectedNotifications.length === 0) {
-        showMessage('Please select notifications to delete.', 'error');
-        return;
-    }
-    
-    const count = selectedNotifications.length;
-    if (!confirm(`Are you sure you want to delete ${count} notification${count > 1 ? 's' : ''}?`)) {
-        return;
-    }
-    
-    deleteNotification();
-}
-
-function showMessage(message, type) {
-    const messageDiv = document.getElementById(type === 'error' ? 'errorMessage' : 'successMessage');
-    const otherDiv = document.getElementById(type === 'error' ? 'successMessage' : 'errorMessage');
-    
-    // Hide other message type
-    otherDiv.style.display = 'none';
-    
-    // Show message
-    messageDiv.textContent = message;
-    messageDiv.style.display = 'block';
-    
-    // Auto-hide after 5 seconds
-    setTimeout(() => {
-        messageDiv.style.display = 'none';
-    }, 5000);
-    
-    // Scroll to top to show message
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// Auto-refresh notification count every 2 minutes
-setInterval(function() {
-    if (document.hasFocus()) {
-        fetch('get_notification_count.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Update unread count in stats
-                const unreadStat = document.querySelector('.stat-card:nth-child(2) .stat-number');
-                if (unreadStat && data.unread_count !== undefined) {
-                    unreadStat.textContent = data.unread_count;
-                }
-            }
-        })
-        .catch(error => console.error('Error refreshing notification count:', error));
-    }
-}, 120000); // 2 minutes
-
-// Initialize bulk actions state
-document.addEventListener('DOMContentLoaded', function() {
-    updateBulkActions();
-    
-    // Add click handlers for notification items (but not checkboxes or buttons)
-    document.querySelectorAll('.notification-item').forEach(item => {
-        item.addEventListener('click', function(e) {
-            // Don't trigger if clicking on checkbox, button, or link
-            if (e.target.type === 'checkbox' || 
-                e.target.tagName === 'BUTTON' || 
-                e.target.tagName === 'A' ||
-                e.target.closest('button') ||
-                e.target.closest('a')) {
-                return;
-            }
-            
-            const notificationId = parseInt(this.dataset.notificationId);
-            if (this.classList.contains('unread')) {
-                markAsRead(notificationId);
-            }
-        });
-    });
-    
-    // Auto-submit form when filters change
-    document.querySelectorAll('.filter-select').forEach(select => {
-        select.addEventListener('change', function() {
-            // Add a small delay to allow multiple selections
-            setTimeout(() => {
-                document.getElementById('filtersForm').submit();
-            }, 100);
-        });
-    });
-});
-
-// Keyboard shortcuts
-document.addEventListener('keydown', function(e) {
-    // Ctrl/Cmd + A to select all
-    if ((e.ctrlKey || e.metaKey) && e.key === 'a' && !e.target.matches('input, textarea, select')) {
-        e.preventDefault();
-        selectAll();
-    }
-    
-    // Delete key to delete selected
-    if (e.key === 'Delete' && selectedNotifications.length > 0 && !e.target.matches('input, textarea, select')) {
-        e.preventDefault();
-        deleteSelected();
-    }
-    
-    // Enter key to mark selected as read
-    if (e.key === 'Enter' && selectedNotifications.length > 0 && !e.target.matches('input, textarea, select, button')) {
-        e.preventDefault();
-        markSelectedAsRead();
-    }
-});
-
-// Handle browser back/forward navigation
-window.addEventListener('popstate', function() {
-    location.reload();
-});
-
-// Add loading state for async operations
-function setLoadingState(element, loading) {
-    if (loading) {
-        element.disabled = true;
-        element.style.opacity = '0.6';
-        element.innerHTML = element.innerHTML.replace(/^/, '⏳ ');
-    } else {
-        element.disabled = false;
-        element.style.opacity = '1';
-        element.innerHTML = element.innerHTML.replace('⏳ ', '');
-    }
-}
-
-// Enhanced error handling
-window.addEventListener('error', function(e) {
-    console.error('JavaScript error:', e.error);
-    showMessage('An unexpected error occurred. Please refresh the page and try again.', 'error');
-});
-
-// Service worker for offline functionality (optional)
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/sw.js').then(function(registration) {
-            console.log('ServiceWorker registration successful');
-        }, function(err) {
-            console.log('ServiceWorker registration failed');
-        });
-    });
-}

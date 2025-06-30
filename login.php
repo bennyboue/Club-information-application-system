@@ -23,8 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
         if ($role === 'student') {
             // Student: Just ID (exact match)
             $valid = ($input_school_id === $db_school_id);
-        } elseif ($role === 'club_patron') {
-            // Club Patron: Check if the ID part matches and the user has the club initials in their school_id
+        } elseif ($role === 'club_manager') {
+            // Club Manager: Check if the ID part matches and the user has the club initials in their school_id
             if (strpos($db_school_id, '-') !== false) {
                 list($id_part, $club_initials) = explode('-', $db_school_id, 2);
                 // Check if input matches either the full ID (ID-CLUB) or just the ID part
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
             }
             
             if (!$valid) {
-                $message = "❌ Club Patron: Use either your full ID (ID-CLUB) or just the ID part";
+                $message = "❌ Club Manager: Use either your full ID (ID-CLUB) or just the ID part";
             }
         } elseif ($role === 'admin') {
             // Admin: ID-SURNAME format
@@ -251,7 +251,7 @@ input:focus {
         <div class="info-box">
             <strong>School ID Format:</strong>
             • Student: Just your ID (e.g., "12345")<br>
-            • Club Patron: Either full ID (e.g., "12345-SC") or just the ID part (e.g., "12345")<br>
+            • Club Manager: Either full ID (e.g., "12345-SC") or just the ID part (e.g., "12345")<br>
             • Admin: ID-SURNAME (e.g., "12345-Smith")
         </div>
 
