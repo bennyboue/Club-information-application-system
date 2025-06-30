@@ -125,7 +125,7 @@ $conn->close();
         </div>
         <div class="nav-links">
             <a href="admin_dashboard.php" class="nav-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
-            <a href="index.php" class="nav-btn"><i class="fas fa-home"></i> Home</a>
+            <a href="home.php" class="nav-btn"><i class="fas fa-home"></i> Home</a>
             <div class="user-welcome">
                 <i class="fas fa-user-shield"></i> <?php echo htmlspecialchars($_SESSION['username']); ?>
             </div>
