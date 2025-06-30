@@ -746,6 +746,52 @@ $conn->close();
                 grid-template-columns: 1fr;
             }
         }
+         .event-card {
+            /* Background image properties */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+        }
+
+        /* Dark overlay to prevent images from being too bright */
+        .event-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1;
+        }
+
+        /* Ensure text appears above overlay */
+        .event-card > * {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Individual card background images - INSERT YOUR IMAGE URLS HERE */
+        .event-card:nth-child(1) {
+            background-image: url('Chess 3D Rendering.jpeg');
+        }
+
+        .event-card:nth-child(2) {
+            background-image: url('download.jpeg');
+        }
+
+        .event-card:nth-child(3) {
+             background-image: url('Wish I could partake in this someday___.jpeg'); 
+        }
+
+        .event-card:nth-child(4) {
+             background-image: url('Better Call Saul Font  Download For Windows PC - Softlay.jpeg');
+        }
+
+        .event-card:nth-child(5) {
+             background-image: url('Olympic Rings Vector Art.jpeg');
+        }
     </style>
 </head>
 <body>
@@ -1073,27 +1119,12 @@ $conn->close();
             
             <div class="memory-card">
                 <div class="memory-quote">
-                    "Painting Club wasn't just about art - it was therapy, friendship, and self-discovery all rolled into one. I discovered my passion for art therapy and now help others heal through creative expression."
-                </div>
-                <div class="memory-author">- Lisa T., Psychology Graduate 2022</div>
-                <div class="memory-club">Painting & Visual Arts Club Alumni</div>
-            </div>
-            
-            <div class="memory-card">
-                <div class="memory-quote">
                     "The Basketball Club taught me teamwork, discipline, and perseverance. Even though I didn't go professional, the leadership skills I developed as team captain have been essential in my management career."
                 </div>
                 <div class="memory-author">- James P., Business Administration Graduate 2021</div>
                 <div class="memory-club">Basketball Elite Club Alumni</div>
             </div>
             
-            <div class="memory-card">
-                <div class="memory-quote">
-                    "Through the Creative Writing Club, I published my first short story, won a university literary award, and gained the confidence to pursue my dream of becoming a novelist. My first book comes out next year!"
-                </div>
-                <div class="memory-author">- Anna C., Literature Graduate 2023</div>
-                <div class="memory-club">Creative Writing & Literature Club Alumni</div>
-            </div>
             
             <div class="memory-card">
                 <div class="memory-quote">

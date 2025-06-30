@@ -18,7 +18,7 @@ $username = $_SESSION['username'];
 // Include notifications functions
 require_once 'notifications_functions.php';
 
-// Fetch user's clubs
+// Fetch user's clubs and store results in array
 $clubs_stmt = $conn->prepare("
     SELECT c.id, c.name, c.initials, c.description, m.joined_at 
     FROM clubs c 
@@ -30,7 +30,14 @@ $clubs_stmt->bind_param("i", $user_id);
 $clubs_stmt->execute();
 $clubs_result = $clubs_stmt->get_result();
 
-// Fetch upcoming events from user's clubs
+// Store clubs data in array
+$clubs_data = [];
+while($club = $clubs_result->fetch_assoc()) {
+    $clubs_data[] = $club;
+}
+$clubs_stmt->close();
+
+// Fetch upcoming events from user's clubs and store results in array
 $events_stmt = $conn->prepare("
     SELECT e.id, e.title, e.description, e.event_date, c.name as club_name, c.id as club_id
     FROM events e 
@@ -44,21 +51,30 @@ $events_stmt->bind_param("i", $user_id);
 $events_stmt->execute();
 $events_result = $events_stmt->get_result();
 
+// Store events data in array
+$events_data = [];
+while($event = $events_result->fetch_assoc()) {
+    $events_data[] = $event;
+}
+$events_stmt->close();
+
 // Get user profile info
 $profile_stmt = $conn->prepare("SELECT username, surname, email, school_id, role FROM users WHERE id = ?");
 $profile_stmt->bind_param("i", $user_id);
 $profile_stmt->execute();
 $profile_result = $profile_stmt->get_result();
 $user_profile = $profile_result->fetch_assoc();
+$profile_stmt->close();
 
 // Get notifications data
 $notifications = getUserNotifications($conn, $user_id, 5);
 $unread_count = getUnreadNotificationCount($conn, $user_id);
 
 // Store counts for stats
-$clubs_count = $clubs_result->num_rows;
-$events_count = $events_result->num_rows;
+$clubs_count = count($clubs_data);
+$events_count = count($events_data);
 
+// NOW close the connection after all data is fetched
 $conn->close();
 ?>
 
@@ -521,12 +537,7 @@ $conn->close();
         <div class="dashboard-section">
             <h3 class="section-title">My Clubs</h3>
             <?php if ($clubs_count > 0): ?>
-                <?php 
-                // Reset the result pointer
-                $clubs_stmt->execute();
-                $clubs_result = $clubs_stmt->get_result();
-                while($club = $clubs_result->fetch_assoc()): 
-                ?>
+                <?php foreach($clubs_data as $club): ?>
                     <div class="club-item">
                         <div class="club-name">
                             <span class="club-initials"><?php echo htmlspecialchars($club['initials']); ?></span>
@@ -540,7 +551,7 @@ $conn->close();
                         </div>
                         <a href="club_details.php?id=<?php echo $club['id']; ?>" class="btn">View Details</a>
                     </div>
-                <?php endwhile; ?>
+                <?php endforeach; ?>
             <?php else: ?>
                 <div class="no-content">
                     You haven't joined any clubs yet.
@@ -553,12 +564,7 @@ $conn->close();
         <div class="dashboard-section">
             <h3 class="section-title">Upcoming Events</h3>
             <?php if ($events_count > 0): ?>
-                <?php 
-                // Reset the result pointer
-                $events_stmt->execute();
-                $events_result = $events_stmt->get_result();
-                while($event = $events_result->fetch_assoc()): 
-                ?>
+                <?php foreach($events_data as $event): ?>
                     <div class="event-item">
                         <div class="event-title"><?php echo htmlspecialchars($event['title']); ?></div>
                         <div class="event-club">
@@ -580,7 +586,7 @@ $conn->close();
                         </div>
                         <a href="club_details.php?id=<?php echo $event['club_id']; ?>" class="btn">View Club</a>
                     </div>
-                <?php endwhile; ?>
+                <?php endforeach; ?>
             <?php else: ?>
                 <div class="no-content">
                     No upcoming events from your clubs.
