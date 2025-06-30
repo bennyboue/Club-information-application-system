@@ -23,36 +23,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description = trim($_POST['club_description']);
         $admin_id = intval($_POST['club_admin']);
 
-        $conn->begin_transaction();
-        try {
-            // Create club
-            $stmt = $conn->prepare("INSERT INTO clubs (name, initials, description, created_by) VALUES (?, ?, ?, ?)");
-            if (!$stmt) {
-                throw new Exception("Prepare failed: " . $conn->error);
-            }
-            $stmt->bind_param("sssi", $name, $initials, $description, $_SESSION['user_id']);
-            if (!$stmt->execute()) {
-                throw new Exception("Execute failed: " . $stmt->error);
-            }
-            $club_id = $conn->insert_id;
-
-            // Assign admin by updating their school_id
-            $stmt = $conn->prepare("UPDATE users SET school_id = CONCAT(school_id, '-', ?) WHERE id = ?");
-            if (!$stmt) {
-                throw new Exception("Prepare failed: " . $conn->error);
-            }
-            $stmt->bind_param("si", $initials, $admin_id);
-            if (!$stmt->execute()) {
-                throw new Exception("Execute failed: " . $stmt->error);
-            }
-
-            $conn->commit();
-            $message = "Club created successfully!";
-            $message_type = "success";
-        } catch (Exception $e) {
-            $conn->rollback();
-            $message = "Error: " . $e->getMessage();
+        // Validation
+        if (empty($name) || empty($initials) || $admin_id <= 0) {
+            $message = "Please fill in all required fields.";
             $message_type = "error";
+        } else {
+            $conn->begin_transaction();
+            try {
+                // Check if club name or initials already exist
+                $check_stmt = $conn->prepare("SELECT COUNT(*) as count FROM clubs WHERE name = ? OR initials = ?");
+                $check_stmt->bind_param("ss", $name, $initials);
+                $check_stmt->execute();
+                $result = $check_stmt->get_result();
+                $row = $result->fetch_assoc();
+                
+                if ($row['count'] > 0) {
+                    throw new Exception("Club name or initials already exists.");
+                }
+
+                // Create club
+                $stmt = $conn->prepare("INSERT INTO clubs (name, initials, description, created_by) VALUES (?, ?, ?, ?)");
+                if (!$stmt) {
+                    throw new Exception("Prepare failed: " . $conn->error);
+                }
+                $stmt->bind_param("sssi", $name, $initials, $description, $_SESSION['user_id']);
+                if (!$stmt->execute()) {
+                    throw new Exception("Execute failed: " . $stmt->error);
+                }
+                $club_id = $conn->insert_id;
+
+                // Create club manager record instead of modifying school_id
+                $manager_stmt = $conn->prepare("INSERT INTO club_managers (user_id, club_id) VALUES (?, ?)");
+                if (!$manager_stmt) {
+                    throw new Exception("Manager prepare failed: " . $conn->error);
+                }
+                $manager_stmt->bind_param("ii", $admin_id, $club_id);
+                if (!$manager_stmt->execute()) {
+                    throw new Exception("Manager execute failed: " . $manager_stmt->error);
+                }
+
+                // Update user role to club_manager if not already
+                $role_stmt = $conn->prepare("UPDATE users SET role = 'club_manager' WHERE id = ? AND role != 'admin'");
+                $role_stmt->bind_param("i", $admin_id);
+                $role_stmt->execute();
+
+                $conn->commit();
+                $message = "Club created successfully!";
+                $message_type = "success";
+            } catch (Exception $e) {
+                $conn->rollback();
+                $message = "Error: " . $e->getMessage();
+                $message_type = "error";
+            }
         }
     }
 
@@ -60,59 +82,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['delete_club'])) {
         $club_id = intval($_POST['club_id']);
         
-        // First remove the club initials from the admin's school_id
-        $club_result = $conn->query("SELECT initials FROM clubs WHERE id = $club_id");
-        if ($club_result && $club_result->num_rows > 0) {
-            $club = $club_result->fetch_assoc();
-            $initials = $club['initials'];
-            
-            $conn->query("UPDATE users SET school_id = REPLACE(school_id, CONCAT('-', '$initials'), '') 
-                          WHERE school_id LIKE '%-$initials'");
-        }
-        
-        // Then delete the club
-        $result = $conn->query("DELETE FROM clubs WHERE id = $club_id");
-        if ($result === false) {
-            $message = "Error deleting club: " . $conn->error;
+        if ($club_id <= 0) {
+            $message = "Invalid club ID.";
             $message_type = "error";
         } else {
-            $message = $conn->affected_rows > 0 ? "Club deleted successfully!" : "No club found with that ID";
-            $message_type = $conn->affected_rows > 0 ? "success" : "warning";
+            $conn->begin_transaction();
+            try {
+                // Delete club manager assignments first
+                $manager_stmt = $conn->prepare("DELETE FROM club_managers WHERE club_id = ?");
+                $manager_stmt->bind_param("i", $club_id);
+                $manager_stmt->execute();
+                
+                // Delete the club
+                $club_stmt = $conn->prepare("DELETE FROM clubs WHERE id = ?");
+                $club_stmt->bind_param("i", $club_id);
+                if (!$club_stmt->execute()) {
+                    throw new Exception("Failed to delete club: " . $conn->error);
+                }
+                
+                $conn->commit();
+                $message = $club_stmt->affected_rows > 0 ? "Club deleted successfully!" : "No club found with that ID";
+                $message_type = $club_stmt->affected_rows > 0 ? "success" : "warning";
+            } catch (Exception $e) {
+                $conn->rollback();
+                $message = "Error deleting club: " . $e->getMessage();
+                $message_type = "error";
+            }
         }
     }
 
     // System announcement
     if (isset($_POST['system_announcement'])) {
         $content = trim($_POST['announcement_content']);
-        $stmt = $conn->prepare("INSERT INTO announcements (club_id, content, created_by) VALUES (0, ?, ?)");
-        if ($stmt === false) {
-            $message = "Prepare failed: " . $conn->error;
+        
+        if (empty($content)) {
+            $message = "Announcement content cannot be empty.";
             $message_type = "error";
         } else {
-            $stmt->bind_param("si", $content, $_SESSION['user_id']);
-            if (!$stmt->execute()) {
-                $message = "Execute failed: " . $stmt->error;
+            $stmt = $conn->prepare("INSERT INTO announcements (club_id, content, created_by) VALUES (0, ?, ?)");
+            if ($stmt === false) {
+                $message = "Prepare failed: " . $conn->error;
                 $message_type = "error";
             } else {
-                $message = $stmt->affected_rows > 0 ? "System announcement posted!" : "Error posting announcement";
-                $message_type = $stmt->affected_rows > 0 ? "success" : "warning";
+                $stmt->bind_param("si", $content, $_SESSION['user_id']);
+                if (!$stmt->execute()) {
+                    $message = "Execute failed: " . $stmt->error;
+                    $message_type = "error";
+                } else {
+                    $message = $stmt->affected_rows > 0 ? "System announcement posted!" : "Error posting announcement";
+                    $message_type = $stmt->affected_rows > 0 ? "success" : "warning";
+                }
             }
         }
     }
 }
 
-// Get all clubs with error handling
-$clubs_result = $conn->query("SELECT c.*, u.username as admin_name 
-                             FROM clubs c
-                             LEFT JOIN users u ON c.created_by = u.id
-                             ORDER BY c.name");
+// Get all clubs with their managers
+$clubs_result = $conn->query("
+    SELECT c.*, u.username as creator_name, cm.user_id as manager_id, um.username as manager_name 
+    FROM clubs c
+    LEFT JOIN users u ON c.created_by = u.id
+    LEFT JOIN club_managers cm ON c.id = cm.club_id AND cm.status = 'active'
+    LEFT JOIN users um ON cm.user_id = um.id
+    ORDER BY c.name
+");
 if ($clubs_result === false) {
     die("Error fetching clubs: " . $conn->error);
 }
 
-// Get potential club admins (users with club_patron role and no existing club assignment)
-$admins_result = $conn->query("SELECT id, username FROM users 
-                              WHERE role = 'club_patron' AND school_id NOT LIKE '%-%'");
+// Get potential club admins (users who are not already managing a club)
+$admins_result = $conn->query("
+    SELECT u.id, u.username 
+    FROM users u 
+    LEFT JOIN club_managers cm ON u.id = cm.user_id AND cm.status = 'active'
+    WHERE u.role IN ('student', 'club_manager') 
+    AND cm.user_id IS NULL
+    ORDER BY u.username
+");
 if ($admins_result === false) {
     die("Error fetching admins: " . $conn->error);
 }
@@ -147,6 +193,9 @@ $stats = [
     'active_events' => getStat($conn, "SELECT COUNT(*) as count FROM events WHERE event_date >= CURDATE()"),
     'pending_requests' => getStat($conn, "SELECT COUNT(*) as count FROM memberships WHERE status = 'pending'")
 ];
+
+// Reset the admins result pointer for the form
+$admins_result->data_seek(0);
 
 $conn->close();
 ?>
@@ -201,6 +250,7 @@ $conn->close();
             <i class="fas fa-cogs"></i> School Club System - Admin Panel
         </div>
         <div class="nav-links">
+            <a href="home.php" class="nav-btn"><i class="fas fa-home"></i> Back to Home</a>
             <div class="user-welcome">
                 <i class="fas fa-user-shield"></i> <?php echo htmlspecialchars($_SESSION['username']); ?>
             </div>
@@ -212,7 +262,7 @@ $conn->close();
         <?php if ($message): ?>
             <div class="alert <?php echo $message_type; ?>">
                 <i class="fas fa-<?php echo $message_type === 'success' ? 'check-circle' : ($message_type === 'error' ? 'exclamation-circle' : 'info-circle'); ?>"></i>
-                <?php echo $message; ?>
+                <?php echo htmlspecialchars($message); ?>
             </div>
         <?php endif; ?>
 
@@ -249,19 +299,20 @@ $conn->close();
                 <form method="POST">
                     <div class="form-group">
                         <label><i class="fas fa-tag"></i> Club Name</label>
-                        <input type="text" name="club_name" class="form-control" required>
+                        <input type="text" name="club_name" class="form-control" required maxlength="100">
                     </div>
                     <div class="form-group">
                         <label><i class="fas fa-hashtag"></i> Club Initials (2-4 letters)</label>
-                        <input type="text" name="club_initials" class="form-control" maxlength="4" required>
+                        <input type="text" name="club_initials" class="form-control" maxlength="10" required pattern="[A-Za-z]{2,4}" title="Please enter 2-4 letters only">
                     </div>
                     <div class="form-group">
                         <label><i class="fas fa-align-left"></i> Description</label>
-                        <textarea name="club_description" class="form-control" rows="3"></textarea>
+                        <textarea name="club_description" class="form-control" rows="3" maxlength="1000"></textarea>
                     </div>
                     <div class="form-group">
-                        <label><i class="fas fa-user-tie"></i> Assign Admin</label>
+                        <label><i class="fas fa-user-tie"></i> Assign Manager</label>
                         <select name="club_admin" class="form-control" required>
+                            <option value="">-- Select a Manager --</option>
                             <?php if ($admins_result->num_rows > 0): ?>
                                 <?php while($admin = $admins_result->fetch_assoc()): ?>
                                     <option value="<?php echo $admin['id']; ?>">
@@ -269,7 +320,7 @@ $conn->close();
                                     </option>
                                 <?php endwhile; ?>
                             <?php else: ?>
-                                <option value="" disabled>No available admins - create club patrons first</option>
+                                <option value="" disabled>No available users - all users are already managing clubs</option>
                             <?php endif; ?>
                         </select>
                     </div>
@@ -286,7 +337,7 @@ $conn->close();
                                 <tr>
                                     <th>Name</th>
                                     <th>Code</th>
-                                    <th>Admin</th>
+                                    <th>Manager</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -301,7 +352,7 @@ $conn->close();
                                         </td>
                                         <td><?php echo htmlspecialchars($club['initials']); ?></td>
                                         <td>
-                                            <?php echo !empty($club['admin_name']) ? htmlspecialchars($club['admin_name']) : '<span class="no-admin">Not assigned</span>'; ?>
+                                            <?php echo !empty($club['manager_name']) ? htmlspecialchars($club['manager_name']) : '<span class="no-admin">Not assigned</span>'; ?>
                                         </td>
                                         <td class="actions">
                                             <form method="POST" style="display:inline;">
@@ -369,7 +420,7 @@ $conn->close();
                 <form method="POST">
                     <div class="form-group">
                         <textarea name="announcement_content" class="form-control" rows="4" required
-                                  placeholder="Important notice for all users..."></textarea>
+                                  placeholder="Important notice for all users..." maxlength="2000"></textarea>
                     </div>
                     <button type="submit" name="system_announcement" class="btn">
                         <i class="fas fa-paper-plane"></i> Post Announcement

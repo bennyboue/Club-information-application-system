@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 17, 2025 at 08:40 PM
+-- Generation Time: Jun 30, 2025 at 03:42 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,29 @@ SET time_zone = "+00:00";
 --
 -- Database: `ics_project`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `announcements`
+--
+
+CREATE TABLE `announcements` (
+  `id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `content` text NOT NULL,
+  `club_id` int(11) DEFAULT NULL,
+  `admin_id` int(11) NOT NULL,
+  `created_by` int(11) NOT NULL,
+  `announcement_type` enum('general','club','event','urgent','maintenance') DEFAULT 'general',
+  `priority` enum('low','medium','high','critical') DEFAULT 'medium',
+  `status` enum('draft','published','archived') DEFAULT 'draft',
+  `is_public` tinyint(1) DEFAULT 1,
+  `publish_date` datetime DEFAULT NULL,
+  `expire_date` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -61,6 +84,22 @@ INSERT INTO `clubs` (`id`, `name`, `initials`, `description`, `created_by`, `cre
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `club_managers`
+--
+
+CREATE TABLE `club_managers` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `club_id` int(11) NOT NULL,
+  `assigned_date` datetime DEFAULT current_timestamp(),
+  `status` enum('active','inactive') DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `events`
 --
 
@@ -86,6 +125,37 @@ CREATE TABLE `memberships` (
   `joined_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `memberships`
+--
+
+INSERT INTO `memberships` (`id`, `user_id`, `club_id`, `joined_at`) VALUES
+(12, 43, 9, '2025-06-18 05:56:12'),
+(13, 43, 4, '2025-06-20 06:29:24'),
+(14, 49, 7, '2025-06-24 11:06:29');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `system_announcements`
+--
+
+CREATE TABLE `system_announcements` (
+  `id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `content` text NOT NULL,
+  `announcement_type` enum('general','urgent','maintenance','event') DEFAULT 'general',
+  `target_audience` enum('all','students','club_managers','admins') DEFAULT 'all',
+  `priority` enum('low','medium','high','critical') DEFAULT 'medium',
+  `status` enum('draft','published','archived') DEFAULT 'draft',
+  `publish_date` datetime DEFAULT NULL,
+  `expire_date` datetime DEFAULT NULL,
+  `admin_id` int(11) NOT NULL,
+  `created_by` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- --------------------------------------------------------
 
 --
@@ -99,42 +169,37 @@ CREATE TABLE `users` (
   `email` varchar(100) NOT NULL,
   `school_id` varchar(50) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `role` enum('student','club_patron','admin') DEFAULT 'student',
+  `role` enum('student','club_manager','admin') DEFAULT 'student',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- ----------------------------------------------------------
-
---
--- Table for announcements
---
-CREATE TABLE announcements (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    club_id INT NOT NULL,
-    content TEXT NOT NULL,
-    created_by INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (club_id) REFERENCES clubs(id),
-    FOREIGN KEY (created_by) REFERENCES users(id)
-);
 
 --
 -- Dumping data for table `users`
 --
 
 INSERT INTO `users` (`id`, `username`, `surname`, `email`, `school_id`, `password`, `role`, `created_at`) VALUES
-(15, 'Kian', 'Mwiberi', 'mwiberikian1@gmail.com', '159377', '$2y$10$wOgFdcU8oVWpBwyD65K1y.jimT9JUm7BeeMfGYWnmTS/uMVIyVvwi', 'admin', '2025-06-15 20:46:29'),
-(35, 'Mwiberi', 'Stacey', 'Staceyjudy75@gmail.com', '12345', '$2y$10$X7BXjG.PUEa/5Dsr5Bw63.Fi3p6HgFyQWy9XoZdbKzkHjkQD4W4/a', 'student', '2025-06-15 22:34:53'),
-(36, 'K', 'Johnson', 'mwiberikian5@gmail.com', '1234', '$2y$10$7gtXXTL2PHeLA6LeZkWB1.KJl1pVYaFy2AHSJs.zOWQ8nQFe7s9Ry', 'club_patron', '2025-06-15 23:08:18'),
-(37, 'john_student', 'Doe', 'john.doe@school.edu', '54321', '$2y$10$example.hash.for.password123', 'student', '2025-06-15 23:52:00'),
-(38, 'mary_patron', 'Smith', 'mary.smith@school.edu', '98765', '$2y$10$example.hash.for.password456', 'club_patron', '2025-06-15 23:52:00'),
-(39, 'admin_wilson', 'Wilson', 'admin.wilson@school.edu', '11111', '$2y$10$example.hash.for.password789', 'admin', '2025-06-15 23:52:00'),
-(40, 'Steve', 'Pat', 'mwiberikian9@gmail.com', '2345', '$2y$10$6zJ39811pnk.SHw3piXcmuT2gft1zfJNWAh5AmJqj8YC.F.riaw2q', 'club_patron', '2025-06-15 23:53:41'),
-(43, 'Kiki', 'Muche', 'mwiberikian6@gmail.com', '1630', '$2y$10$UcbST5Tcrdd7YhfQeB9z/e.QqF6.Kntn/wnSkzBoj/Dp8lQenK8ji', 'student', '2025-06-17 17:45:33');
+(43, 'Kiki', 'Muche', 'mwiberikian6@gmail.com', '1630', '$2y$10$UcbST5Tcrdd7YhfQeB9z/e.QqF6.Kntn/wnSkzBoj/Dp8lQenK8ji', 'student', '2025-06-17 17:45:33'),
+(45, 'Alvin', 'Muche', 'mwiberikia@gmail.com', '1111', '$2y$10$cZLK/NvsABfMJux81EDmpeTu2NUoLCxkS5Gf6MbFQa1un/ov4NmdG', '', '2025-06-18 06:19:22'),
+(47, 'Steve', 'Rogers', 'steve1@gmail.com', '9745', '$2y$10$B.hP09lZMlM7UAlDLR06Muxr.RKyYF29CV1nIuNwn0wtjbhGPYVSG', 'club_manager', '2025-06-24 10:31:47'),
+(48, 'Bruce', 'Wayne', 'bruce@gmail.com', '163035', '$2y$10$tGN.0YHc3ETbhkgDKgH5J.ig/4aDjqfuktwo372u9arWqy5UFOG.6', 'admin', '2025-06-24 10:37:16'),
+(49, 'Joshua', 'Adalo', 'Josh@gmail.com', '689848', '$2y$10$dTsLcezzHgwNO/0tZZfnJuq.awpeoD5N..kEDBnEnKxoH9O9uaT36', 'student', '2025-06-24 11:05:57');
 
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `announcements`
+--
+ALTER TABLE `announcements`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `admin_id` (`admin_id`),
+  ADD KEY `created_by` (`created_by`),
+  ADD KEY `idx_club_id` (`club_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_publish_date` (`publish_date`),
+  ADD KEY `idx_priority` (`priority`),
+  ADD KEY `idx_announcement_type` (`announcement_type`);
 
 --
 -- Indexes for table `clubs`
@@ -144,6 +209,14 @@ ALTER TABLE `clubs`
   ADD UNIQUE KEY `name` (`name`),
   ADD UNIQUE KEY `initials` (`initials`),
   ADD KEY `created_by` (`created_by`);
+
+--
+-- Indexes for table `club_managers`
+--
+ALTER TABLE `club_managers`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_club_manager` (`club_id`),
+  ADD KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `events`
@@ -161,6 +234,18 @@ ALTER TABLE `memberships`
   ADD KEY `club_id` (`club_id`);
 
 --
+-- Indexes for table `system_announcements`
+--
+ALTER TABLE `system_announcements`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `created_by` (`created_by`),
+  ADD KEY `admin_id` (`admin_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_publish_date` (`publish_date`),
+  ADD KEY `idx_target_audience` (`target_audience`),
+  ADD KEY `idx_priority` (`priority`);
+
+--
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
@@ -174,10 +259,22 @@ ALTER TABLE `users`
 --
 
 --
+-- AUTO_INCREMENT for table `announcements`
+--
+ALTER TABLE `announcements`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `clubs`
 --
 ALTER TABLE `clubs`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+
+--
+-- AUTO_INCREMENT for table `club_managers`
+--
+ALTER TABLE `club_managers`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `events`
@@ -189,23 +286,44 @@ ALTER TABLE `events`
 -- AUTO_INCREMENT for table `memberships`
 --
 ALTER TABLE `memberships`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT for table `system_announcements`
+--
+ALTER TABLE `system_announcements`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
 
 --
 -- Constraints for dumped tables
 --
 
 --
+-- Constraints for table `announcements`
+--
+ALTER TABLE `announcements`
+  ADD CONSTRAINT `announcements_ibfk_1` FOREIGN KEY (`admin_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `announcements_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `announcements_ibfk_3` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `clubs`
 --
 ALTER TABLE `clubs`
   ADD CONSTRAINT `clubs_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `club_managers`
+--
+ALTER TABLE `club_managers`
+  ADD CONSTRAINT `club_managers_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `club_managers_ibfk_2` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `events`
@@ -219,6 +337,13 @@ ALTER TABLE `events`
 ALTER TABLE `memberships`
   ADD CONSTRAINT `memberships_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `memberships_ibfk_2` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `system_announcements`
+--
+ALTER TABLE `system_announcements`
+  ADD CONSTRAINT `system_announcements_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `system_announcements_ibfk_2` FOREIGN KEY (`admin_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
