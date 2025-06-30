@@ -817,12 +817,12 @@ $conn->close();
 <div class="navbar">
     <div class="logo-container">
         <div class="logo">
-<<<<<<< HEAD
+
             <h1>School Club Management System</h1>
-            <p>Manage your clubs and events efficiently</p>
-=======
+            
+
             <h1>Welcome to the School Club Management System</h1>
-            <p>Manage your clubs and events efficiently.</p>
+           
         </div>
         <div>
             <?php if (isset($_SESSION['username'])): ?>
@@ -841,7 +841,7 @@ $conn->close();
                 <a href="register.php">Register</a>
                 <a href="login.php">Login</a>
             <?php endif; ?>
->>>>>>> dfb34445006d1bbc8e1fc88c8b6af0e5850ad4f8
+
         </div>
     </div>
     <div class="nav-links">
