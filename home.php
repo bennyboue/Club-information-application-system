@@ -817,8 +817,31 @@ $conn->close();
 <div class="navbar">
     <div class="logo-container">
         <div class="logo">
+<<<<<<< HEAD
             <h1>School Club Management System</h1>
             <p>Manage your clubs and events efficiently</p>
+=======
+            <h1>Welcome to the School Club Management System</h1>
+            <p>Manage your clubs and events efficiently.</p>
+        </div>
+        <div>
+            <?php if (isset($_SESSION['username'])): ?>
+                <span class="user-welcome">
+                    Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!
+                </span>
+                <?php if ($_SESSION['role'] === 'admin'): ?>
+                    <a href="admin_dashboard.php">Admin Dashboard</a>
+                <?php elseif ($_SESSION['role'] === 'club_manager'): ?>
+                    <a href="club_manager_dashboard.php">Manager Dashboard</a>
+                <?php else: ?>
+                    <a href="student_dashboard.php">Dashboard</a>
+                <?php endif; ?>
+                <a href="logout.php">Logout</a>
+            <?php else: ?>
+                <a href="register.php">Register</a>
+                <a href="login.php">Login</a>
+            <?php endif; ?>
+>>>>>>> dfb34445006d1bbc8e1fc88c8b6af0e5850ad4f8
         </div>
     </div>
     <div class="nav-links">
