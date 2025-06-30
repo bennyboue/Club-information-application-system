@@ -20,653 +20,709 @@ $conn->close();
 <html>
 <head>
     <title>School Club Management System - Home</title>
-    <style>
-        body {
-            font-family: 'Times New Roman', Times, serif;
-            margin: 0;
-            padding: 0;
-            background-color: rgb(169, 153, 136);
-        }
+ <style>
+    /* Base Styles */
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: rgb(169, 153, 136);
+        line-height: 1.6;
+        color: #333;
+    }
 
-        .navbar {
-            background-color: rgb(237, 222, 203);
-            padding: 15px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    /* Typography Improvements */
+    h1, h2, h3, h4, h5, h6 {
+        margin-top: 0;
+        line-height: 1.2;
+    }
 
-        .navbar .logo {
-            font-size: 18px;
-            font-weight: bold;
-            color: black;
-        }
+    p {
+        margin-bottom: 1em;
+    }
 
-        .navbar a {
-            background-color: rgb(209, 120, 25);
-            color: #fff;
-            padding: 10px 18px;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-            text-align: center;
-        }
+    /* Navbar Enhancements */
+    .navbar {
+        background-color: rgb(237, 222, 203);
+        padding: 15px 5%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
 
-        .navbar a:hover {
-            background-color: rgb(150, 85, 10);
-            transform: scale(1.05);
-        }
+    .navbar .logo {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: black;
+    }
 
-        .user-welcome {
-            background-color: rgb(209, 120, 25);
-            color: #fff;
-            padding: 10px 18px;
-            border-radius: 5px;
-            font-weight: bold;
-        }
+    .navbar .logo p {
+        margin: 5px 0 0;
+        font-size: 0.9rem;
+        font-weight: normal;
+        color: #555;
+    }
 
+    .navbar a {
+        background-color: rgb(209, 120, 25);
+        color: #fff;
+        padding: 10px 18px;
+        text-decoration: none;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        margin-left: 10px;
+        font-size: 0.95rem;
+    }
+
+    .navbar a:hover {
+        background-color: rgb(150, 85, 10);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .user-welcome {
+        background-color: rgb(209, 120, 25);
+        color: #fff;
+        padding: 10px 18px;
+        border-radius: 5px;
+        font-weight: bold;
+        margin-right: 10px;
+        display: inline-block;
+    }
+
+    /* Image Gallery Improvements */
+    .image-gallery {
+        display: flex;
+        justify-content: center;
+        gap: 25px;
+        margin: 40px auto;
+        max-width: 1200px;
+        padding: 0 20px;
+        flex-wrap: wrap;
+    }
+
+    .image-container {
+        position: relative;
+        width: 22%;
+        min-width: 250px;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s ease;
+    }
+
+    .image-gallery img {
+        width: 100%;
+        height: 280px;
+        object-fit: cover;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: 3px solid transparent;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .image-gallery img:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        border-color: rgb(209, 120, 25);
+    }
+
+    .image-gallery img.active {
+        border-color: rgb(209, 120, 25);
+        transform: translateY(-3px);
+    }
+
+    /* Club Dropdown Enhancements */
+    .club-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: rgba(255, 255, 255, 0.98);
+        border-radius: 0 0 10px 10px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        display: none;
+        z-index: 1000;
+        max-height: 400px;
+        overflow-y: auto;
+        margin-top: 5px;
+        backdrop-filter: blur(5px);
+        border-top: 3px solid rgb(209, 120, 25);
+    }
+
+    .club-dropdown.show {
+        display: block;
+        animation: slideDown 0.3s ease-out;
+    }
+
+    .dropdown-header {
+        background-color: rgb(209, 120, 25);
+        color: white;
+        padding: 15px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 1.1rem;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    .club-item {
+        background-color: rgb(237, 222, 203);
+        margin: 10px;
+        padding: 15px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+        position: relative;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    .club-item:hover {
+        background-color: rgb(209, 120, 25);
+        color: white;
+        transform: translateX(5px);
+        border-color: rgb(150, 85, 10);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .club-name {
+        font-weight: bold;
+        font-size: 1rem;
+        margin-bottom: 8px;
+    }
+
+    .club-initials {
+        background-color: rgb(209, 120, 25);
+        color: white;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        display: inline-block;
+        margin-bottom: 8px;
+        font-weight: bold;
+    }
+
+    .club-item:hover .club-initials {
+        background-color: white;
+        color: rgb(209, 120, 25);
+    }
+
+    .club-description {
+        font-size: 0.85rem;
+        color: #666;
+        line-height: 1.5;
+        margin-bottom: 10px;
+    }
+
+    .club-item:hover .club-description {
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    .join-btn {
+        background-color: rgb(209, 120, 25);
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+    }
+
+    .join-btn:hover {
+        background-color: rgb(150, 85, 10);
+        transform: scale(1.05);
+    }
+
+    .club-item:hover .join-btn {
+        background-color: white;
+        color: rgb(209, 120, 25);
+    }
+
+    .join-btn.joined {
+        background-color: #28a745;
+        cursor: default;
+    }
+
+    .join-btn.joined:hover {
+        background-color: #28a745;
+        transform: none;
+    }
+
+    /* Encouragement Section Improvements */
+    .encouragement-section {
+        background-color: rgb(237, 222, 203);
+        margin: 50px 5%;
+        padding: 50px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: 3px solid rgb(209, 120, 25);
+    }
+
+    .encouragement-header {
+        text-align: center;
+        color: rgb(209, 120, 25);
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 30px;
+        position: relative;
+        padding-bottom: 15px;
+    }
+
+    .encouragement-header:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 3px;
+        background-color: rgb(209, 120, 25);
+    }
+
+    .encouragement-content {
+        font-size: 1.1rem;
+        line-height: 1.7;
+        color: #333;
+        text-align: center;
+        margin-bottom: 40px;
+        max-width: 900px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .benefits-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 25px;
+        margin: 40px 0;
+    }
+
+    .benefit-card {
+        background-color: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        border-left: 5px solid rgb(209, 120, 25);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .benefit-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .benefit-icon {
+        font-size: 2rem;
+        margin-bottom: 15px;
+        display: block;
+        color: rgb(209, 120, 25);
+    }
+
+    .benefit-title {
+        font-weight: bold;
+        color: rgb(209, 120, 25);
+        font-size: 1.2rem;
+        margin-bottom: 12px;
+    }
+
+    .benefit-description {
+        color: #666;
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    /* Events Section Improvements */
+    .events-section {
+        background: linear-gradient(135deg, rgb(169, 153, 136), rgb(237, 222, 203));
+        margin: 50px 5%;
+        padding: 50px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .events-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 30px;
+        margin-top: 40px;
+    }
+
+    .event-card {
+        background-color: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        border-top: 4px solid rgb(209, 120, 25);
+        position: relative;
+    }
+
+    .event-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .event-title {
+        font-weight: bold;
+        color: rgb(209, 120, 25);
+        font-size: 1.3rem;
+        margin-bottom: 12px;
+    }
+
+    .event-club {
+        color: #666;
+        font-style: italic;
+        margin-bottom: 15px;
+        font-size: 0.9rem;
+    }
+
+    .event-description {
+        color: #333;
+        line-height: 1.7;
+        margin-bottom: 20px;
+        font-size: 0.95rem;
+    }
+
+    .event-impact {
+        background-color: rgb(237, 222, 203);
+        padding: 12px;
+        border-radius: 8px;
+        font-style: italic;
+        color: rgb(150, 85, 10);
+        font-size: 0.9rem;
+        border-left: 3px solid rgb(209, 120, 25);
+    }
+
+    /* Memories Section Improvements */
+    .memories-section {
+        background-color: rgb(237, 222, 203);
+        margin: 50px 5%;
+        padding: 50px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: 3px solid rgb(209, 120, 25);
+    }
+
+    .memories-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 25px;
+        margin-top: 40px;
+    }
+
+    .memory-card {
+        background-color: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        position: relative;
+        border-left: 4px solid rgb(209, 120, 25);
+        transition: all 0.3s ease;
+    }
+
+    .memory-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .memory-quote {
+        font-style: italic;
+        color: #333;
+        font-size: 1rem;
+        line-height: 1.7;
+        margin-bottom: 20px;
+        position: relative;
+        padding-left: 20px;
+    }
+
+    .memory-quote:before {
+        content: '"';
+        position: absolute;
+        left: 0;
+        top: 0;
+        font-size: 2rem;
+        color: rgba(209, 120, 25, 0.2);
+        line-height: 1;
+    }
+
+    .memory-author {
+        color: rgb(209, 120, 25);
+        font-weight: bold;
+        font-size: 0.95rem;
+    }
+
+    .memory-club {
+        color: #666;
+        font-size: 0.85rem;
+        margin-top: 5px;
+    }
+
+    /* Call to Action Improvements */
+    .call-to-action {
+        background: linear-gradient(135deg, rgb(209, 120, 25), rgb(150, 85, 10));
+        color: white;
+        padding: 40px;
+        border-radius: 10px;
+        text-align: center;
+        margin: 50px 0 0;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .call-to-action h3 {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+    }
+
+    .call-to-action p {
+        font-size: 1.1rem;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .cta-button {
+        background-color: white;
+        color: rgb(209, 120, 25);
+        padding: 15px 35px;
+        border: none;
+        border-radius: 30px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 20px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .cta-button:hover {
+        background-color: rgb(237, 222, 203);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Footer Improvements */
+    .footer {
+        background-color: rgb(237, 222, 203);
+        color: #333;
+        padding: 60px 0 0;
+        margin-top: 80px;
+        border-top: 3px solid rgb(209, 120, 25);
+    }
+
+    .footer-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 40px;
+        padding: 0 30px;
+    }
+
+    .footer-section {
+        margin-bottom: 30px;
+    }
+
+    .footer-section h3 {
+        color: rgb(209, 120, 25);
+        font-size: 1.3rem;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        position: relative;
+    }
+
+    .footer-section h3:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 50px;
+        height: 2px;
+        background-color: rgb(209, 120, 25);
+    }
+
+    .footer-section p, .footer-section ul {
+        margin: 15px 0;
+        line-height: 1.7;
+        font-size: 0.95rem;
+    }
+
+    .footer-section ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .footer-section ul li {
+        margin: 12px 0;
+        padding-left: 25px;
+        position: relative;
+    }
+
+    .footer-section ul li:before {
+        content: "▶";
+        color: rgb(209, 120, 25);
+        position: absolute;
+        left: 0;
+        font-size: 0.8rem;
+    }
+
+    .contact-info {
+        background-color: rgb(209, 120, 25);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 20px;
+        font-size: 0.95rem;
+    }
+
+    .contact-info strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 1rem;
+    }
+
+    .footer-bottom {
+        text-align: center;
+        margin-top: 50px;
+        padding: 20px 0;
+        border-top: 1px solid rgba(209, 120, 25, 0.3);
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    /* Success Message */
+    .success-message {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #28a745;
+        color: white;
+        padding: 15px 25px;
+        border-radius: 5px;
+        z-index: 10000;
+        display: none;
+        animation: slideInRight 0.3s ease-out;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Animations */
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-15px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 992px) {
         .image-gallery {
-            display: flex;
-            justify-content: center;
             gap: 20px;
-            margin: 20px;
-            position: relative;
-            align-items: flex-start;
         }
-
+        
         .image-container {
-            position: relative;
-            width: 22%;
-            display: flex;
+            width: 45%;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .navbar {
             flex-direction: column;
-        }
-
-        .image-gallery img {
-            width: 100%;
-            height: 320px;
-            object-fit: cover;
-            border-radius: 8px;
-            transition: transform 0.3s ease, opacity 0.3s ease;
-            cursor: pointer;
-            border: 3px solid transparent;
-        }
-
-        .image-gallery img:hover {
-            transform: scale(1.05);
-            opacity: 0.8;
-            border-color: rgb(209, 120, 25);
-        }
-
-        .image-gallery img.active {
-            border-color: rgb(209, 120, 25);
-            transform: scale(1.02);
-        }
-
-        /* Club dropdown styles - Updated to push content down */
-        .image-container {
-            position: relative;
-            width: 22%;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.3s ease;
-        }
-
-        .club-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background-color: rgba(255, 255, 255, 0.95);
-            border-radius: 8px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-            display: none;
-            z-index: 1000;
-            max-height: 400px;
-            overflow-y: auto;
-            margin-top: 2px;
-            backdrop-filter: blur(5px);
-        }
-
-        .club-dropdown.show {
-            display: block;
-            animation: slideDown 0.3s ease-out;
-        }
-
-        /* Add space when dropdown is open to push content down */
-        .image-container.dropdown-open {
-            margin-bottom: 420px; /* Space for dropdown */
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .club-item {
-            background-color: rgb(237, 222, 203);
-            margin: 8px;
             padding: 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-            position: relative;
         }
-
-        .club-item:hover {
-            background-color: rgb(209, 120, 25);
-            color: white;
-            transform: translateX(5px);
-            border-color: rgb(150, 85, 10);
-        }
-
-        .club-name {
-            font-weight: bold;
-            font-size: 16px;
-            margin-bottom: 5px;
-        }
-
-        .club-initials {
-            background-color: rgb(209, 120, 25);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            display: inline-block;
-            margin-bottom: 5px;
-        }
-
-        .club-item:hover .club-initials {
-            background-color: white;
-            color: rgb(209, 120, 25);
-        }
-
-        .club-description {
-            font-size: 13px;
-            color: #666;
-            line-height: 1.4;
-            margin-bottom: 10px;
-        }
-
-        .club-item:hover .club-description {
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        .join-btn {
-            background-color: rgb(209, 120, 25);
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-        }
-
-        .join-btn:hover {
-            background-color: rgb(150, 85, 10);
-            transform: scale(1.05);
-        }
-
-        .club-item:hover .join-btn {
-            background-color: white;
-            color: rgb(209, 120, 25);
-        }
-
-        .join-btn.joined {
-            background-color: #28a745;
-            cursor: default;
-        }
-
-        .join-btn.joined:hover {
-            background-color: #28a745;
-            transform: none;
-        }
-
-        .club-item:hover .join-btn.joined {
-            background-color: #28a745;
-            color: white;
-        }
-
-        .dropdown-header {
-            background-color: rgb(209, 120, 25);
-            color: white;
-            padding: 12px;
-            text-align: center;
-            font-weight: bold;
-            border-radius: 8px 8px 0 0;
-            margin: 0;
-        }
-
-        .no-clubs {
-            padding: 20px;
-            text-align: center;
-            color: #666;
-            font-style: italic;
-        }
-
-        .hero {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: calc(100vh - 60px);
-            padding: 0 50px;
-        }
-
-        .hero-text {
-            color: black;
-            font-size: 18px;
-            max-width: 50%;
-        }
-
-        .menu {
-            display: flex;
-            flex-direction: row;
-            gap: 15px;
-        }
-
-        .menu a {
-            background-color: rgb(209, 120, 25);
-            color: #fff;
-            padding: 10px 18px;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-            text-align: center;
-        }
-
-        .menu a:hover {
-            background-color: rgb(150, 85, 10);
-            transform: scale(1.05);
-        }
-
-        /* Overlay to close dropdown when clicking outside */
-        .dropdown-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.1);
-            display: none;
-            z-index: 999;
-        }
-
-        .dropdown-overlay.show {
-            display: block;
-        }
-
-        /* Success message styles */
-        .success-message {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background-color: #28a745;
-            color: white;
-            padding: 15px 20px;
-            border-radius: 5px;
-            z-index: 10000;
-            display: none;
-            animation: slideInRight 0.3s ease-out;
-        }
-
-        .success-message.show {
-            display: block;
-        }
-
-        @keyframes slideInRight {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        /* NEW STYLES FOR CLUB ENCOURAGEMENT SECTIONS */
-        .encouragement-section {
-            background-color: rgb(237, 222, 203);
-            margin: 40px 20px;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-            border: 3px solid rgb(209, 120, 25);
-        }
-
-        .encouragement-header {
-            text-align: center;
-            color: rgb(209, 120, 25);
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .encouragement-content {
-            font-size: 18px;
-            line-height: 1.6;
-            color: #333;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .benefits-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin: 30px 0;
-        }
-
-        .benefit-card {
-            background-color: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border-left: 5px solid rgb(209, 120, 25);
-        }
-
-        .benefit-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .benefit-icon {
-            font-size: 24px;
-            margin-bottom: 10px;
-            display: block;
-        }
-
-        .benefit-title {
-            font-weight: bold;
-            color: rgb(209, 120, 25);
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-
-        .benefit-description {
-            color: #666;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .events-section {
-            background: linear-gradient(135deg, rgb(169, 153, 136), rgb(237, 222, 203));
-            margin: 40px 20px;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .events-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin-top: 30px;
-        }
-
-        .event-card {
-            background-color: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-            border-top: 4px solid rgb(209, 120, 25);
-        }
-
-        .event-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .event-title {
-            font-weight: bold;
-            color: rgb(209, 120, 25);
-            font-size: 20px;
-            margin-bottom: 10px;
-        }
-
-        .event-club {
-            color: #666;
-            font-style: italic;
+        
+        .navbar .logo {
             margin-bottom: 15px;
-        }
-
-        .event-description {
-            color: #333;
-            line-height: 1.5;
-            margin-bottom: 15px;
-        }
-
-        .event-impact {
-            background-color: rgb(237, 222, 203);
-            padding: 10px;
-            border-radius: 5px;
-            font-style: italic;
-            color: rgb(150, 85, 10);
-            font-size: 14px;
-        }
-
-        .memories-section {
-            background-color: rgb(237, 222, 203);
-            margin: 40px 20px;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-            border: 3px solid rgb(209, 120, 25);
-        }
-
-        .memories-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
-        }
-
-        .memory-card {
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            position: relative;
-            border-left: 4px solid rgb(209, 120, 25);
-        }
-
-        .memory-quote {
-            font-style: italic;
-            color: #333;
-            font-size: 16px;
-            line-height: 1.5;
-            margin-bottom: 15px;
-        }
-
-        .memory-author {
-            color: rgb(209, 120, 25);
-            font-weight: bold;
-            font-size: 14px;
-        }
-
-        .memory-club {
-            color: #666;
-            font-size: 12px;
-        }
-
-        .call-to-action {
-            background: linear-gradient(135deg, rgb(209, 120, 25), rgb(150, 85, 10));
-            color: white;
-            padding: 30px;
-            border-radius: 10px;
             text-align: center;
-            margin: 30px 0;
         }
-
-        .cta-button {
-            background-color: white;
-            color: rgb(209, 120, 25);
-            padding: 15px 30px;
-            border: none;
-            border-radius: 25px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 15px;
+        
+        .navbar a {
+            margin: 5px;
         }
-
-        .cta-button:hover {
-            background-color: rgb(237, 222, 203);
-            transform: scale(1.05);
-        }
-
-        /* Footer Styles */
-        .footer {
-            background-color: rgb(237, 222, 203);
-            color: #333;
-            padding: 40px 0;
-            margin-top: 50px;
-            border-top: 3px solid rgb(209, 120, 25);
-        }
-
-        .footer-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 40px;
-            padding: 0 30px;
-        }
-
-        .footer-section h3 {
-            color: rgb(209, 120, 25);
-            font-size: 20px;
-            margin-bottom: 15px;
-            border-bottom: 2px solid rgb(209, 120, 25);
-            padding-bottom: 8px;
-        }
-
-        .footer-section p, .footer-section ul {
+        
+        .user-welcome {
             margin: 10px 0;
-            line-height: 1.6;
-        }
-
-        .footer-section ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .footer-section ul li {
-            margin: 8px 0;
-            padding-left: 20px;
-            position: relative;
-        }
-
-        .footer-section ul li:before {
-            content: "▶";
-            color: rgb(209, 120, 25);
-            position: absolute;
-            left: 0;
-            font-size: 12px;
-        }
-
-        .contact-info {
-            background-color: rgb(209, 120, 25);
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 15px;
-        }
-
-        .contact-info strong {
             display: block;
-            margin-bottom: 5px;
-            font-size: 16px;
-        }
-
-        .footer-bottom {
             text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid rgb(209, 120, 25);
-            color: #666;
-            font-size: 14px;
         }
-
-        @media (max-width: 768px) {
-            .hero {
-                flex-direction: column;
-                text-align: center;
-                padding: 20px;
-            }
-
-            .hero-text {
-                margin-bottom: 20px;
-                font-size: 16px;
-            }
-
-            .menu {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .image-gallery {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .image-container {
-                width: 80%;
-                margin-bottom: 20px;
-            }
-
-            .image-gallery img {
-                height: 250px;
-            }
-
-            .user-welcome {
-                margin-bottom: 10px;
-            }
-
-            .club-dropdown {
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                width: 90%;
-                max-width: 400px;
-                max-height: 70vh;
-            }
-
-            .footer-content {
-                grid-template-columns: 1fr;
-                gap: 20px;
-                padding: 0 20px;
-            }
-
-            .encouragement-section,
-            .events-section,
-            .memories-section {
-                margin: 20px 10px;
-                padding: 20px;
-            }
-
-            .benefits-grid,
-            .events-grid,
-            .memories-grid {
-                grid-template-columns: 1fr;
-            }
+        
+        .image-container {
+            width: 100%;
+            max-width: 350px;
         }
-    </style>
+        
+        .club-dropdown {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 400px;
+            max-height: 70vh;
+        }
+        
+        .encouragement-section,
+        .events-section,
+        .memories-section {
+            padding: 30px;
+            margin: 30px 3%;
+        }
+        
+        .footer-content {
+            grid-template-columns: 1fr;
+            padding: 0 20px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .encouragement-section,
+        .events-section,
+        .memories-section {
+            padding: 25px 15px;
+            margin: 25px 2%;
+        }
+        
+        .encouragement-header {
+            font-size: 1.5rem;
+        }
+        
+        .call-to-action {
+            padding: 25px 15px;
+        }
+        
+        .cta-button {
+            padding: 12px 25px;
+            font-size: 1rem;
+        }
+    }
+</style>
 </head>
 <body>
 
