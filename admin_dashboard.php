@@ -101,11 +101,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get all clubs with error handling
-$clubs_result = $conn->query("SELECT c.*, u.username as admin_name 
-                             FROM clubs c
-                             LEFT JOIN users u ON c.created_by = u.id
-                             ORDER BY c.name");
+// Get all clubs with their admin and patron information
+$clubs_result = $conn->query("
+    SELECT c.*, 
+           u.username as admin_name,
+           p.username as patron_name,
+           p.id as patron_id
+    FROM clubs c
+    LEFT JOIN users u ON c.created_by = u.id
+    LEFT JOIN users p ON p.school_id LIKE CONCAT('%-', c.initials) AND p.role = 'club_patron'
+    ORDER BY c.name
+");
 if ($clubs_result === false) {
     die("Error fetching clubs: " . $conn->error);
 }
@@ -192,6 +198,22 @@ $conn->close();
         .no-admin {
             color: #dc3545;
             font-style: italic;
+        }
+        .club-admin-info {
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        .patron-info {
+            color: #17a2b8;
+            font-weight: bold;
+        }
+        .no-patron {
+            color: #6c757d;
+            font-style: italic;
+        }
+        .btn-sm {
+            padding: 2px 5px;
+            font-size: 12px;
         }
     </style>
 </head>
@@ -286,7 +308,7 @@ $conn->close();
                                 <tr>
                                     <th>Name</th>
                                     <th>Code</th>
-                                    <th>Admin</th>
+                                    <th>Admin/Patron</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -301,7 +323,25 @@ $conn->close();
                                         </td>
                                         <td><?php echo htmlspecialchars($club['initials']); ?></td>
                                         <td>
-                                            <?php echo !empty($club['admin_name']) ? htmlspecialchars($club['admin_name']) : '<span class="no-admin">Not assigned</span>'; ?>
+                                            <div class="club-admin-info">
+                                                <?php if (!empty($club['admin_name'])): ?>
+                                                    <div>Created by: <?php echo htmlspecialchars($club['admin_name']); ?></div>
+                                                <?php else: ?>
+                                              
+                                                <?php endif; ?>
+                                                
+                                                <?php if (!empty($club['patron_name'])): ?>
+                                                    <div class="patron-info">
+                                                        Patron: <?php echo htmlspecialchars($club['patron_name']); ?>
+                                                        <a href="assign_patrons.php?club_id=<?php echo $club['id']; ?>&patron_id=<?php echo $club['patron_id']; ?>" 
+                                                           class="btn btn-sm" style="margin-left: 5px;">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <div class="no-patron">No patron assigned</div>
+                                                <?php endif; ?>
+                                            </div>
                                         </td>
                                         <td class="actions">
                                             <form method="POST" style="display:inline;">
@@ -314,10 +354,6 @@ $conn->close();
                                             <a href="club_report.php?club_id=<?php echo $club['id']; ?>" 
                                                class="btn btn-report">
                                                 <i class="fas fa-chart-bar"></i> Report
-                                            </a>
-                                            <a href="edit_club.php?id=<?php echo $club['id']; ?>" 
-                                               class="btn">
-                                                <i class="fas fa-edit"></i> Edit
                                             </a>
                                         </td>
                                     </tr>
@@ -337,6 +373,9 @@ $conn->close();
                 <div class="admin-tools">
                     <a href="user_management.php" class="btn">
                         <i class="fas fa-users-cog"></i> Manage Users
+                    </a>
+                    <a href="assign_patrons.php" class="btn">
+                        <i class="fas fa-user-tie"></i> Assign Patrons
                     </a>
                     <a href="system_report.php" class="btn btn-report">
                         <i class="fas fa-file-alt"></i> Generate Report
