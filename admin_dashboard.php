@@ -242,6 +242,22 @@ $conn->close();
             color: #dc3545;
             font-style: italic;
         }
+        .club-admin-info {
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        .patron-info {
+            color: #17a2b8;
+            font-weight: bold;
+        }
+        .no-patron {
+            color: #6c757d;
+            font-style: italic;
+        }
+        .btn-sm {
+            padding: 2px 5px;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -366,10 +382,6 @@ $conn->close();
                                                class="btn btn-report">
                                                 <i class="fas fa-chart-bar"></i> Report
                                             </a>
-                                            <a href="edit_club.php?id=<?php echo $club['id']; ?>" 
-                                               class="btn">
-                                                <i class="fas fa-edit"></i> Edit
-                                            </a>
                                         </td>
                                     </tr>
                                 <?php endwhile; ?>
@@ -388,6 +400,9 @@ $conn->close();
                 <div class="admin-tools">
                     <a href="user_management.php" class="btn">
                         <i class="fas fa-users-cog"></i> Manage Users
+                    </a>
+                    <a href="assign_patrons.php" class="btn">
+                        <i class="fas fa-user-tie"></i> Assign Patrons
                     </a>
                     <a href="system_report.php" class="btn btn-report">
                         <i class="fas fa-file-alt"></i> Generate Report

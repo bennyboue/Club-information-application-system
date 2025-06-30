@@ -23,22 +23,19 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
         if ($role === 'student') {
             // Student: Just ID (exact match)
             $valid = ($input_school_id === $db_school_id);
-        } elseif ($role === 'club_manager') {
-            // Club Patron: ID-CLUB_INITIALS format
-            if (strpos($input_school_id, '-') !== false) {
-                list($id_part, $club_initials) = explode('-', $input_school_id, 2);
-                $club_stmt = $conn->prepare("SELECT id FROM clubs WHERE initials = ?");
-                $club_stmt->bind_param("s", $club_initials);
-                $club_stmt->execute();
-                $club_stmt->store_result();
-
-                if ($club_stmt->num_rows > 0 && $db_school_id === $id_part) {
-                    $valid = true;
-                }
-                $club_stmt->close();
+        } elseif ($role === 'club_patron') {
+            // Club Patron: Check if the ID part matches and the user has the club initials in their school_id
+            if (strpos($db_school_id, '-') !== false) {
+                list($id_part, $club_initials) = explode('-', $db_school_id, 2);
+                // Check if input matches either the full ID (ID-CLUB) or just the ID part
+                $valid = ($input_school_id === $db_school_id) || ($input_school_id === $id_part);
+            } else {
+                // For backward compatibility
+                $valid = ($input_school_id === $db_school_id);
             }
+            
             if (!$valid) {
-                $message = "❌ Club Manager format should be: ID-CLUB_INITIALS";
+                $message = "❌ Club Patron: Use either your full ID (ID-CLUB) or just the ID part";
             }
         } elseif ($role === 'admin') {
             // Admin: ID-SURNAME format
@@ -78,113 +75,173 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 <head>
     <title>Login</title>
     <style>
-        /* General body styling */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: rgb(169, 153, 136);
-        }
+      /* General body styling */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: rgb(169, 153, 136);
+}
 
-        .container {
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            padding: 40px;
-            width: 400px;
-            max-width: 90%;
-            text-align: center;
-        }
+/* Container styling */
+.container {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+    width: 400px;
+    max-width: 90%;
+    text-align: center;
+}
 
-        .container h2 {
-            color: rgb(209, 120, 25);
-            margin-bottom: 30px;
-            font-size: 24px;
-        }
+/* Heading style */
+.container h2 {
+    color: rgb(209, 120, 25);
+    margin-bottom: 30px;
+    font-size: 24px;
+}
 
-        .container p {
-            color: red;
-            margin-bottom: 15px;
-            font-weight: bold;
-        }
+/* Message/error styling */
+.container p {
+    color: red;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
 
-        .info-box {
-            background-color: #e8f4f8;
-            border: 1px solid #bee5eb;
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 20px;
-            font-size: 12px;
-            color: #0c5460;
-            text-align: left;
-        }
+/* Info box styling */
+.info-box {
+    background-color: #e8f4f8;
+    border: 1px solid #bee5eb;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    color: #0c5460;
+    text-align: left;
+}
 
-        .info-box strong {
-            display: block;
-            margin-bottom: 5px;
-        }
+.info-box strong {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
 
-        /* Input fields styling */
-        input[type="text"],
-        input[type="password"] {
-            width: calc(100% - 20px);
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 1px solid rgb(209, 120, 25);
-            border-radius: 5px;
-            background-color: #f9f9f9;
-            font-size: 14px;
-        }
+/* Input fields styling */
+input[type="text"],
+input[type="password"] {
+    width: calc(100% - 20px);
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid rgb(209, 120, 25);
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
 
-        input[type="text"]:focus,
-        input[type="password"]:focus {
-            outline: none;
-            border-color: rgb(150, 85, 10);
-            background-color: #fff;
-        }
+input[type="text"]:focus,
+input[type="password"]:focus {
+    outline: none;
+    border-color: rgb(150, 85, 10);
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(209, 120, 25, 0.2);
+}
 
-        /* Button styling */
-        button {
-            width: 100%;
-            padding: 12px;
-            background-color: rgb(209, 120, 25);
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
+/* Button styling */
+button {
+    width: 100%;
+    padding: 12px;
+    background-color: rgb(209, 120, 25);
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    margin-top: 10px;
+}
 
-        button:hover {
-            background-color: rgb(150, 85, 10);
-        }
+button:hover {
+    background-color: rgb(150, 85, 10);
+    transform: translateY(-2px);
+}
 
-        .links {
-            margin-top: 20px;
-        }
+/* Links styling */
+.links {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
 
-        .links a {
-            color: rgb(209, 120, 25);
-            text-decoration: none;
-            margin: 0 10px;
-        }
+.links a {
+    color: rgb(209, 120, 25);
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
 
-        .links a:hover {
-            text-decoration: underline;
-        }
+.links a:hover {
+    color: rgb(150, 85, 10);
+    text-decoration: underline;
+}
 
-        /* Responsive design */
-        @media (max-width: 500px) {
-            .container {
-                width: 90%;
-                padding: 20px;
-            }
-        }
+/* Responsive design */
+@media (max-width: 500px) {
+    .container {
+        width: 90%;
+        padding: 25px;
+    }
+    
+    .container h2 {
+        font-size: 20px;
+    }
+    
+    button {
+        padding: 10px;
+    }
+    
+    .links {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+
+/* Animation for better UX */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.container {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Focus styles for accessibility */
+button:focus, 
+input:focus {
+    outline: 2px solid rgb(209, 120, 25);
+    outline-offset: 2px;
+}
+
+/* Placeholder styling */
+::placeholder {
+    color: #999;
+    opacity: 1;
+}
+
+:-ms-input-placeholder {
+    color: #999;
+}
+
+::-ms-input-placeholder {
+    color: #999;
+}
     </style>
 </head>
 <body>
@@ -194,7 +251,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
         <div class="info-box">
             <strong>School ID Format:</strong>
             • Student: Just your ID (e.g., "12345")<br>
-            • Club Manager: ID-CLUB_INITIALS (e.g., "12345-SC")<br>
+            • Club Patron: Either full ID (e.g., "12345-SC") or just the ID part (e.g., "12345")<br>
             • Admin: ID-SURNAME (e.g., "12345-Smith")
         </div>
 
