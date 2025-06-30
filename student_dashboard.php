@@ -315,6 +315,10 @@ $conn->close();
                 <div class="stat-number"><?php echo $events_result->num_rows; ?></div>
                 <div class="stat-label">Upcoming Events</div>
             </div>
+            
+            <div class="dashboard-section">
+    <?php displayNotifications($mysqli, $_SESSION['user_id'], 'student'); ?>
+</div>
             <div class="stat-item">
                 <div class="stat-number"><?php echo ucfirst($user_profile['role']); ?></div>
                 <div class="stat-label">Account Type</div>

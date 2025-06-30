@@ -137,6 +137,128 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// admin_dashboard.php - Updated announcement handling
+
+// Function to create notification when announcement is posted
+function createNotificationForAnnouncement($mysqli, $title, $content, $club_id, $admin_id, $target_audience = 'all') {
+    try {
+        // Start transaction
+        $mysqli->begin_transaction();
+        
+        // Insert into notifications table
+        $notification_query = "INSERT INTO notifications (title, message, type, target_audience, club_id, created_by) VALUES (?, ?, 'announcement', ?, ?, ?)";
+        $notification_stmt = $mysqli->prepare($notification_query);
+        $notification_stmt->bind_param("sssii", $title, $content, $target_audience, $club_id, $admin_id);
+        $notification_stmt->execute();
+        
+        $notification_id = $mysqli->insert_id;
+        
+        // Insert the announcement with notification link
+        $announcement_query = "INSERT INTO announcements (title, content, club_id, notification_id, created_at) VALUES (?, ?, ?, ?, NOW())";
+        $announcement_stmt = $mysqli->prepare($announcement_query);
+        $announcement_stmt->bind_param("ssii", $title, $content, $club_id, $notification_id);
+        $announcement_stmt->execute();
+        
+        // Create notification entries for all relevant users
+        createUserNotifications($mysqli, $notification_id, $target_audience, $club_id);
+        
+        // Commit transaction
+        $mysqli->commit();
+        
+        return $notification_id;
+        
+    } catch (Exception $e) {
+        $mysqli->rollback();
+        throw $e;
+    }
+}
+
+// Function to create individual user notification entries
+function createUserNotifications($mysqli, $notification_id, $target_audience, $club_id) {
+    $users_query = "";
+    
+    switch ($target_audience) {
+        case 'students':
+            $users_query = "SELECT id FROM users WHERE role = 'student'";
+            break;
+            
+        case 'club_managers':
+            if ($club_id) {
+                // Only notify managers of the specific club
+                $users_query = "SELECT DISTINCT u.id FROM users u 
+                               JOIN club_members cm ON u.id = cm.user_id 
+                               WHERE u.role = 'club_manager' AND cm.club_id = ?";
+            } else {
+                // Notify all club managers
+                $users_query = "SELECT id FROM users WHERE role = 'club_manager'";
+            }
+            break;
+            
+        case 'all':
+        default:
+            if ($club_id) {
+                // All members of specific club + all admins
+                $users_query = "SELECT DISTINCT u.id FROM users u 
+                               LEFT JOIN club_members cm ON u.id = cm.user_id 
+                               WHERE (cm.club_id = ? OR u.role = 'admin')";
+            } else {
+                // All users
+                $users_query = "SELECT id FROM users";
+            }
+            break;
+    }
+    
+    // Execute user query
+    if ($club_id && ($target_audience == 'club_managers' || $target_audience == 'all')) {
+        $users_stmt = $mysqli->prepare($users_query);
+        $users_stmt->bind_param("i", $club_id);
+    } else {
+        $users_stmt = $mysqli->prepare($users_query);
+    }
+    
+    $users_stmt->execute();
+    $users_result = $users_stmt->get_result();
+    
+    // Insert notification for each user
+    $insert_user_notification = "INSERT IGNORE INTO user_notifications (user_id, notification_id) VALUES (?, ?)";
+    $user_notif_stmt = $mysqli->prepare($insert_user_notification);
+    
+    while ($user = $users_result->fetch_assoc()) {
+        $user_notif_stmt->bind_param("ii", $user['id'], $notification_id);
+        $user_notif_stmt->execute();
+    }
+}
+
+// Handle form submission
+if ($_POST['action'] == 'create_announcement') {
+    $title = trim($_POST['title']);
+    $content = trim($_POST['content']);
+    $club_id = !empty($_POST['club_id']) ? intval($_POST['club_id']) : null;
+    $target_audience = $_POST['target_audience'] ?? 'all';
+    $admin_id = $_SESSION['user_id']; // Assuming admin ID is stored in session
+    
+    try {
+        // Validate club_id if provided
+        if ($club_id) {
+            $check_club = "SELECT id FROM clubs WHERE id = ?";
+            $check_stmt = $mysqli->prepare($check_club);
+            $check_stmt->bind_param("i", $club_id);
+            $check_stmt->execute();
+            
+            if ($check_stmt->get_result()->num_rows == 0) {
+                throw new Exception("Selected club does not exist.");
+            }
+        }
+        
+        // Create notification and announcement
+        $notification_id = createNotificationForAnnouncement($mysqli, $title, $content, $club_id, $admin_id, $target_audience);
+        
+        $success_message = "Announcement posted successfully and notifications sent to " . $target_audience . "!";
+        
+    } catch (Exception $e) {
+        $error_message = "Error posting announcement: " . $e->getMessage();
+    }
+}
 // Get all clubs with their managers
 $clubs_result = $conn->query("
     SELECT c.*, u.username as creator_name, cm.user_id as manager_id, um.username as manager_name 
@@ -258,6 +380,46 @@ $conn->close();
             padding: 2px 5px;
             font-size: 12px;
         }
+        .stat-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px) scale(1.03);
+            box-shadow: 0 10px 25px rgba(209, 120, 25, 0.3);
+            z-index: 10;
+        }
+        
+        .stat-card:hover .stat-icon {
+            color: rgb(209, 120, 25);
+        }
+        
+        .stat-card:hover .stat-number {
+            color: rgb(150, 85, 10);
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .actions .btn {
+            margin: 0;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-edit {
+            background-color: #17a2b8;
+            color: white;
+        }
+        
+        .btn-edit:hover {
+            background-color: #138496;
+        }
     </style>
 </head>
 <body>
@@ -285,15 +447,18 @@ $conn->close();
         <!-- Quick Stats -->
         <div class="stats-grid">
             <div class="stat-card">
+                <a href="user_management.php" class="stat-card clickable">
                 <div class="stat-icon"><i class="fas fa-users"></i></div>
                 <div class="stat-number"><?php echo $stats['total_users']; ?></div>
                 <div class="stat-label">Total Users</div>
+        </a>
             </div>
             <div class="stat-card">
                 <div class="stat-icon"><i class="fas fa-star"></i></div>
                 <div class="stat-number"><?php echo $stats['total_clubs']; ?></div>
                 <div class="stat-label">Active Clubs</div>
             </div>
+            
             <div class="stat-card">
                 <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
                 <div class="stat-number"><?php echo $stats['active_events']; ?></div>
@@ -371,6 +536,10 @@ $conn->close();
                                             <?php echo !empty($club['manager_name']) ? htmlspecialchars($club['manager_name']) : '<span class="no-admin">Not assigned</span>'; ?>
                                         </td>
                                         <td class="actions">
+                                            <a href="edit_club.php?id=<?php echo $club['id']; ?>" 
+                                               class="btn btn-edit">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
                                             <form method="POST" style="display:inline;">
                                                 <input type="hidden" name="club_id" value="<?php echo $club['id']; ?>">
                                                 <button type="submit" name="delete_club" class="btn btn-danger"
@@ -433,13 +602,56 @@ $conn->close();
 
                 <h3><i class="fas fa-edit"></i> Post System Announcement</h3>
                 <form method="POST">
-                    <div class="form-group">
-                        <textarea name="announcement_content" class="form-control" rows="4" required
-                                  placeholder="Important notice for all users..." maxlength="2000"></textarea>
-                    </div>
-                    <button type="submit" name="system_announcement" class="btn">
-                        <i class="fas fa-paper-plane"></i> Post Announcement
-                    </button>
+                    <div class="announcement-form">
+    <h3>Create New Announcement</h3>
+    
+    <?php if (isset($success_message)): ?>
+        <div class="alert alert-success"><?php echo $success_message; ?></div>
+    <?php endif; ?>
+    
+    <?php if (isset($error_message)): ?>
+        <div class="alert alert-error"><?php echo $error_message; ?></div>
+    <?php endif; ?>
+    
+    <form method="POST" action="">
+        <input type="hidden" name="action" value="create_announcement">
+        
+        <div class="form-group">
+            <label for="title">Announcement Title:</label>
+            <input type="text" id="title" name="title" required maxlength="255">
+        </div>
+        
+        <div class="form-group">
+            <label for="content">Content:</label>
+            <textarea id="content" name="content" required rows="5"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="club_id">Club (Optional):</label>
+            <select id="club_id" name="club_id">
+                <option value="">All Clubs</option>
+                <?php
+                $clubs_query = "SELECT id, name FROM clubs ORDER BY name";
+                $clubs_result = $mysqli->query($clubs_query);
+                while ($club = $clubs_result->fetch_assoc()):
+                ?>
+                    <option value="<?php echo $club['id']; ?>"><?php echo htmlspecialchars($club['name']); ?></option>
+                <?php endwhile; ?>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="target_audience">Target Audience:</label>
+            <select id="target_audience" name="target_audience" required>
+                <option value="all">Everyone</option>
+                <option value="students">Students Only</option>
+                <option value="club_managers">Club Managers Only</option>
+            </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Post Announcement</button>
+    </form>
+</div>
                 </form>
             </div>
         </div>

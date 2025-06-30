@@ -942,15 +942,6 @@ $conn->close();
                 </div>
             </div>
             
-            <div class="event-card">
-                <div class="event-title">Science Fair & Research Symposium</div>
-                <div class="event-club">Science & Technology Clubs</div>
-                <div class="event-description">
-                    A platform for students to present their research projects and scientific innovations. The event attracts researchers, professors, and industry experts who provide mentorship and collaboration opportunities.
-                </div>
-                <div class="event-impact">
-                    Student research presented here has been published in academic journals and patent applications have been filed!
-                </div>
             </div>
         </div>
     </div>
