@@ -20,7 +20,7 @@ $conn->close();
 <html>
 <head>
     <title>School Club Management System - Home</title>
- <style>
+<style>
     /* Base Styles */
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -41,58 +41,123 @@ $conn->close();
         margin-bottom: 1em;
     }
 
-    /* Navbar Enhancements */
+    /* Navigation Bar Styles - Enhanced Version */
     .navbar {
         background-color: rgb(237, 222, 203);
-        padding: 15px 5%;
+        padding: 0 5%;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
         position: sticky;
         top: 0;
         z-index: 1000;
+        height: 80px;
     }
 
-    .navbar .logo {
-        font-size: 1.1rem;
-        font-weight: bold;
-        color: black;
+    .logo-container {
+        display: flex;
+        align-items: center;
     }
 
-    .navbar .logo p {
-        margin: 5px 0 0;
-        font-size: 0.9rem;
-        font-weight: normal;
+    .logo h1 {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #333;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .logo p {
+        font-size: 0.85rem;
         color: #555;
+        margin: 5px 0 0;
+        font-weight: 400;
     }
 
-    .navbar a {
-        background-color: rgb(209, 120, 25);
-        color: #fff;
-        padding: 10px 18px;
-        text-decoration: none;
-        border-radius: 5px;
-        transition: all 0.3s ease;
-        font-weight: 500;
-        margin-left: 10px;
-        font-size: 0.95rem;
-    }
-
-    .navbar a:hover {
-        background-color: rgb(150, 85, 10);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 20px;
     }
 
     .user-welcome {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        margin-right: 15px;
+    }
+
+    .welcome-text {
+        font-weight: 500;
+        color: #333;
+        font-size: 0.95rem;
+    }
+
+    .user-role {
         background-color: rgb(209, 120, 25);
-        color: #fff;
-        padding: 10px 18px;
-        border-radius: 5px;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
         font-weight: bold;
-        margin-right: 10px;
-        display: inline-block;
+        text-transform: uppercase;
+        margin-top: 3px;
+    }
+
+    .nav-buttons {
+        display: flex;
+        gap: 12px;
+    }
+
+    .nav-button {
+        background-color: rgb(209, 120, 25);
+        color: white;
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .nav-button i {
+        font-size: 0.9rem;
+    }
+
+    .nav-button:hover {
+        background-color: rgb(150, 85, 10);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .nav-button.logout {
+        background-color: #dc3545;
+    }
+
+    .nav-button.logout:hover {
+        background-color: #c82333;
+    }
+
+    .nav-button.register {
+        background-color: #28a745;
+    }
+
+    .nav-button.register:hover {
+        background-color: #218838;
+    }
+
+    .nav-button.login {
+        background-color: #17a2b8;
+    }
+
+    .nav-button.login:hover {
+        background-color: #138496;
     }
 
     /* Image Gallery Improvements */
@@ -155,6 +220,7 @@ $conn->close();
         border-top: 3px solid rgb(209, 120, 25);
     }
 
+    /* Rest of your existing CSS remains the same */
     .club-dropdown.show {
         display: block;
         animation: slideDown 0.3s ease-out;
@@ -650,27 +716,46 @@ $conn->close();
         .image-container {
             width: 45%;
         }
-    }
 
-    @media (max-width: 768px) {
+        /* Navigation responsive adjustments */
         .navbar {
+            height: auto;
             flex-direction: column;
-            padding: 15px;
+            padding-bottom: 15px;
         }
         
-        .navbar .logo {
-            margin-bottom: 15px;
+        .logo {
             text-align: center;
+            padding: 15px 0;
         }
         
-        .navbar a {
-            margin: 5px;
+        .nav-links {
+            width: 100%;
+            justify-content: space-between;
+            flex-wrap: wrap;
         }
         
         .user-welcome {
-            margin: 10px 0;
-            display: block;
-            text-align: center;
+            margin-right: 0;
+            align-items: center;
+            order: 1;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .nav-buttons {
+            order: 2;
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .encouragement-section,
+        .events-section,
+        .memories-section {
+            padding: 30px;
+            margin: 30px 3%;
         }
         
         .image-container {
@@ -688,20 +773,23 @@ $conn->close();
             max-height: 70vh;
         }
         
-        .encouragement-section,
-        .events-section,
-        .memories-section {
-            padding: 30px;
-            margin: 30px 3%;
-        }
-        
         .footer-content {
             grid-template-columns: 1fr;
             padding: 0 20px;
         }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 576px) {
+        .nav-buttons {
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .nav-button {
+            width: 100%;
+            justify-content: center;
+        }
+
         .encouragement-section,
         .events-section,
         .memories-section {
@@ -726,30 +814,49 @@ $conn->close();
 </head>
 <body>
 
-    <div class="navbar">
+<div class="navbar">
+    <div class="logo-container">
         <div class="logo">
-            <h1>Welcome to the School Club Management System</h1>
-            <p>Manage your clubs and events efficiently.</p>
-        </div>
-        <div>
-            <?php if (isset($_SESSION['username'])): ?>
-                <span class="user-welcome">
-                    Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!
-                </span>
-                <?php if ($_SESSION['role'] === 'admin'): ?>
-                    <a href="admin_dashboard.php">Admin Dashboard</a>
-                <?php elseif ($_SESSION['role'] === 'club_manager'): ?>
-                    <a href="manager_dashboard.php">Manager Dashboard</a>
-                <?php else: ?>
-                    <a href="student_dashboard.php">Dashboard</a>
-                <?php endif; ?>
-                <a href="logout.php">Logout</a>
-            <?php else: ?>
-                <a href="register.php">Register</a>
-                <a href="login.php">Login</a>
-            <?php endif; ?>
+            <h1>School Club Management System</h1>
+            <p>Manage your clubs and events efficiently</p>
         </div>
     </div>
+    <div class="nav-links">
+        <?php if (isset($_SESSION['username'])): ?>
+            <div class="user-welcome">
+                <span class="welcome-text">Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?></span>
+                <div class="user-role"><?php echo ucfirst($_SESSION['role']); ?></div>
+            </div>
+            <div class="nav-buttons">
+                <?php if ($_SESSION['role'] === 'admin'): ?>
+                    <a href="admin_dashboard.php" class="nav-button">
+                        <i class="fas fa-tachometer-alt"></i> Admin Dashboard
+                    </a>
+                <?php elseif ($_SESSION['role'] === 'club_manager'): ?>
+                    <a href="manager_dashboard.php" class="nav-button">
+                        <i class="fas fa-clipboard-list"></i> Manager Dashboard
+                    </a>
+                <?php else: ?>
+                    <a href="student_dashboard.php" class="nav-button">
+                        <i class="fas fa-user"></i> Dashboard
+                    </a>
+                <?php endif; ?>
+                <a href="logout.php" class="nav-button logout">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        <?php else: ?>
+            <div class="nav-buttons">
+                <a href="register.php" class="nav-button register">
+                    <i class="fas fa-user-plus"></i> Register
+                </a>
+                <a href="login.php" class="nav-button login">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
 
     <!-- Success message -->
     <div class="success-message" id="successMessage"></div>
