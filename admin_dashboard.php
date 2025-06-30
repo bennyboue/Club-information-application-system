@@ -230,7 +230,7 @@ function createUserNotifications($mysqli, $notification_id, $target_audience, $c
 }
 
 // Handle form submission
-if ($_POST['action'] == 'create_announcement') {
+if (isset($_POST['action']) && $_POST['action'] == 'create_announcement') {
     $title = trim($_POST['title']);
     $content = trim($_POST['content']);
     $club_id = !empty($_POST['club_id']) ? intval($_POST['club_id']) : null;

@@ -1,5 +1,5 @@
 <?php
-// notifications_functions.php - Functions for displaying notifications
+// notifications_functions.php - Functions for notifications system
 
 // Function to get notifications for a specific user
 function getUserNotifications($mysqli, $user_id, $limit = 10, $unread_only = false) {
@@ -15,7 +15,7 @@ function getUserNotifications($mysqli, $user_id, $limit = 10, $unread_only = fal
                 un.is_read,
                 un.read_at,
                 c.name as club_name,
-                u.name as created_by_name
+                u.username as created_by_name
               FROM notifications n
               JOIN user_notifications un ON n.id = un.notification_id
               LEFT JOIN clubs c ON n.club_id = c.id
@@ -28,10 +28,16 @@ function getUserNotifications($mysqli, $user_id, $limit = 10, $unread_only = fal
               LIMIT ?";
     
     $stmt = $mysqli->prepare($query);
+    if (!$stmt) {
+        error_log("MySQL prepare error: " . $mysqli->error);
+        return [];
+    }
+    
     $stmt->bind_param("ii", $user_id, $limit);
     $stmt->execute();
     
-    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $result = $stmt->get_result();
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
 // Function to mark notification as read
@@ -41,6 +47,11 @@ function markNotificationAsRead($mysqli, $user_id, $notification_id) {
               WHERE user_id = ? AND notification_id = ?";
     
     $stmt = $mysqli->prepare($query);
+    if (!$stmt) {
+        error_log("MySQL prepare error: " . $mysqli->error);
+        return false;
+    }
+    
     $stmt->bind_param("ii", $user_id, $notification_id);
     return $stmt->execute();
 }
@@ -56,61 +67,21 @@ function getUnreadNotificationCount($mysqli, $user_id) {
                 AND (n.expires_at IS NULL OR n.expires_at > NOW())";
     
     $stmt = $mysqli->prepare($query);
+    if (!$stmt) {
+        error_log("MySQL prepare error: " . $mysqli->error);
+        return 0;
+    }
+    
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
     
-    $result = $stmt->get_result()->fetch_assoc();
-    return $result['count'];
-}
-
-// Function to display notifications in dashboard
-function displayNotifications($mysqli, $user_id, $dashboard_type = 'student') {
-    $notifications = getUserNotifications($mysqli, $user_id, 5);
-    $unread_count = getUnreadNotificationCount($mysqli, $user_id);
-    
-    echo "<div class='notifications-section'>";
-    echo "<div class='notifications-header'>";
-    echo "<h3>Notifications";
-    if ($unread_count > 0) {
-        echo " <span class='unread-badge'>$unread_count</span>";
-    }
-    echo "</h3>";
-    echo "<a href='notifications.php' class='view-all-link'>View All</a>";
-    echo "</div>";
-    
-    if (empty($notifications)) {
-        echo "<div class='no-notifications'>No notifications at this time.</div>";
-    } else {
-        echo "<div class='notifications-list'>";
-        foreach ($notifications as $notification) {
-            $read_class = $notification['is_read'] ? 'read' : 'unread';
-            $time_ago = timeAgo($notification['created_at']);
-            
-            echo "<div class='notification-item $read_class' data-notification-id='{$notification['id']}' onclick='markAsRead({$notification['id']})'>";
-            
-            echo "<div class='notification-content'>";
-            echo "<div class='notification-title'>{$notification['title']}</div>";
-            echo "<div class='notification-message'>" . substr($notification['message'], 0, 100) . "...</div>";
-            echo "<div class='notification-meta'>";
-            
-            if ($notification['club_name']) {
-                echo "<span class='club-tag'>📍 {$notification['club_name']}</span>";
-            }
-            
-            echo "<span class='time-ago'>🕒 $time_ago</span>";
-            echo "</div>";
-            echo "</div>";
-            
-            if (!$notification['is_read']) {
-                echo "<div class='unread-indicator'></div>";
-            }
-            
-            echo "</div>";
-        }
-        echo "</div>";
+    $result = $stmt->get_result();
+    if (!$result) {
+        return 0;
     }
     
-    echo "</div>";
+    $row = $result->fetch_assoc();
+    return $row ? (int)$row['count'] : 0;
 }
 
 // Helper function to convert timestamp to "time ago" format
@@ -125,173 +96,284 @@ function timeAgo($datetime) {
     
     return floor($time/31536000) . ' years ago';
 }
-?>
 
-<!-- Include this in your student_dashboard.php -->
-<div class="dashboard-section">
-    <?php displayNotifications($mysqli, $_SESSION['user_id'], 'student'); ?>
-</div>
-
-<!-- Include this in your club_manager_dashboard.php -->
-<div class="dashboard-section">
-    <?php displayNotifications($mysqli, $_SESSION['user_id'], 'club_manager'); ?>
-</div>
-
-<!-- JavaScript for handling notification interactions -->
-<script>
-function markAsRead(notificationId) {
-    fetch('mark_notification_read.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            notification_id: notificationId
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Update UI to show as read
-            const notificationElement = document.querySelector(`[data-notification-id="${notificationId}"]`);
-            notificationElement.classList.remove('unread');
-            notificationElement.classList.add('read');
-            
-            // Update unread count
-            const badge = document.querySelector('.unread-badge');
-            if (badge) {
-                const currentCount = parseInt(badge.textContent);
-                const newCount = currentCount - 1;
-                if (newCount > 0) {
-                    badge.textContent = newCount;
-                } else {
-                    badge.style.display = 'none';
-                }
-            }
+// Function to create notification when announcement is posted
+function createNotificationForAnnouncement($mysqli, $title, $content, $club_id, $admin_id, $target_audience = 'all') {
+    try {
+        // Start transaction
+        $mysqli->begin_transaction();
+        
+        // Insert into notifications table
+        $notification_query = "INSERT INTO notifications (title, message, type, target_audience, club_id, created_by) VALUES (?, ?, 'announcement', ?, ?, ?)";
+        $notification_stmt = $mysqli->prepare($notification_query);
+        
+        if (!$notification_stmt) {
+            throw new Exception("Prepare failed: " . $mysqli->error);
         }
-    })
-    .catch(error => console.error('Error:', error));
-}
-
-// Auto-refresh notifications every 30 seconds
-setInterval(function() {
-    if (document.hasFocus()) {
-        location.reload();
+        
+        $notification_stmt->bind_param("sssii", $title, $content, $target_audience, $club_id, $admin_id);
+        $notification_stmt->execute();
+        
+        $notification_id = $mysqli->insert_id;
+        
+        // Create notification entries for all relevant users
+        createUserNotifications($mysqli, $notification_id, $target_audience, $club_id);
+        
+        // Commit transaction
+        $mysqli->commit();
+        
+        return $notification_id;
+        
+    } catch (Exception $e) {
+        $mysqli->rollback();
+        throw $e;
     }
-}, 30000);
-</script>
-
-<style>
-.notifications-section {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
 }
 
-.notifications-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
+// Function to create individual user notification entries
+function createUserNotifications($mysqli, $notification_id, $target_audience, $club_id) {
+    $users_query = "";
+    $bind_params = [];
+    $bind_types = "";
+    
+    switch ($target_audience) {
+        case 'all':
+            // All club members
+            $users_query = "SELECT user_id FROM memberships WHERE club_id = ?";
+            $bind_params = [$club_id];
+            $bind_types = "i";
+            break;
+            
+        case 'students':
+            // Only student members
+            $users_query = "SELECT m.user_id FROM memberships m 
+                           JOIN users u ON m.user_id = u.id 
+                           WHERE m.club_id = ? AND u.role = 'student'";
+            $bind_params = [$club_id];
+            $bind_types = "i";
+            break;
+            
+        case 'admins':
+            // Only admin members
+            $users_query = "SELECT m.user_id FROM memberships m 
+                           JOIN users u ON m.user_id = u.id 
+                           WHERE m.club_id = ? AND u.role = 'admin'";
+            $bind_params = [$club_id];
+            $bind_types = "i";
+            break;
+            
+        default:
+            throw new Exception("Invalid target audience: " . $target_audience);
+    }
+    
+    // Get target users
+    $stmt = $mysqli->prepare($users_query);
+    if (!$stmt) {
+        throw new Exception("Prepare failed: " . $mysqli->error);
+    }
+    
+    if (!empty($bind_params)) {
+        $stmt->bind_param($bind_types, ...$bind_params);
+    }
+    
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    // Insert notification for each user
+    $insert_query = "INSERT INTO user_notifications (notification_id, user_id) VALUES (?, ?)";
+    $insert_stmt = $mysqli->prepare($insert_query);
+    
+    if (!$insert_stmt) {
+        throw new Exception("Prepare failed: " . $mysqli->error);
+    }
+    
+    while ($user = $result->fetch_assoc()) {
+        $insert_stmt->bind_param("ii", $notification_id, $user['user_id']);
+        $insert_stmt->execute();
+    }
 }
 
-.notifications-header h3 {
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+// Function to create event notification
+function createNotificationForEvent($mysqli, $event_title, $event_description, $event_date, $club_id, $admin_id) {
+    $title = "New Event: " . $event_title;
+    $message = "A new event has been scheduled";
+    if ($event_date) {
+        $message .= " for " . date('F j, Y', strtotime($event_date));
+    }
+    if ($event_description) {
+        $message .= ". " . substr($event_description, 0, 100) . "...";
+    }
+    
+    return createNotificationForAnnouncement($mysqli, $title, $message, $club_id, $admin_id, 'all');
 }
 
-.unread-badge {
-    background: #dc3545;
-    color: white;
-    border-radius: 50%;
-    padding: 2px 8px;
-    font-size: 12px;
-    font-weight: bold;
+// Function to create membership notification
+function createNotificationForMembership($mysqli, $user_id, $club_id, $action) {
+    try {
+        $mysqli->begin_transaction();
+        
+        // Get club and user info
+        $club_query = "SELECT name FROM clubs WHERE id = ?";
+        $club_stmt = $mysqli->prepare($club_query);
+        $club_stmt->bind_param("i", $club_id);
+        $club_stmt->execute();
+        $club_result = $club_stmt->get_result();
+        $club = $club_result->fetch_assoc();
+        
+        $user_query = "SELECT username FROM users WHERE id = ?";
+        $user_stmt = $mysqli->prepare($user_query);
+        $user_stmt->bind_param("i", $user_id);
+        $user_stmt->execute();
+        $user_result = $user_stmt->get_result();
+        $user = $user_result->fetch_assoc();
+        
+        if (!$club || !$user) {
+            throw new Exception("Club or user not found");
+        }
+        
+        $title = "";
+        $message = "";
+        
+        switch ($action) {
+            case 'joined':
+                $title = "Welcome to " . $club['name'] . "!";
+                $message = "You have successfully joined " . $club['name'] . ". Welcome to the club!";
+                break;
+            case 'left':
+                $title = "Left " . $club['name'];
+                $message = "You have left " . $club['name'] . ". Thank you for being part of our community.";
+                break;
+            default:
+                throw new Exception("Invalid action: " . $action);
+        }
+        
+        // Insert notification
+        $notification_query = "INSERT INTO notifications (title, message, type, target_audience, club_id, created_by) VALUES (?, ?, 'membership', 'individual', ?, 1)";
+        $notification_stmt = $mysqli->prepare($notification_query);
+        $notification_stmt->bind_param("ssi", $title, $message, $club_id);
+        $notification_stmt->execute();
+        
+        $notification_id = $mysqli->insert_id;
+        
+        // Create user notification
+        $user_notification_query = "INSERT INTO user_notifications (notification_id, user_id) VALUES (?, ?)";
+        $user_notification_stmt = $mysqli->prepare($user_notification_query);
+        $user_notification_stmt->bind_param("ii", $notification_id, $user_id);
+        $user_notification_stmt->execute();
+        
+        $mysqli->commit();
+        return $notification_id;
+        
+    } catch (Exception $e) {
+        $mysqli->rollback();
+        throw $e;
+    }
 }
 
-.notifications-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+// Function to mark all notifications as read for a user
+function markAllNotificationsAsRead($mysqli, $user_id) {
+    $query = "UPDATE user_notifications un
+              JOIN notifications n ON un.notification_id = n.id
+              SET un.is_read = 1, un.read_at = NOW() 
+              WHERE un.user_id = ? 
+                AND un.is_read = 0 
+                AND n.is_active = 1 
+                AND (n.expires_at IS NULL OR n.expires_at > NOW())";
+    
+    $stmt = $mysqli->prepare($query);
+    if (!$stmt) {
+        error_log("MySQL prepare error: " . $mysqli->error);
+        return false;
+    }
+    
+    $stmt->bind_param("i", $user_id);
+    return $stmt->execute();
 }
 
-.notification-item {
-    background: white;
-    border-radius: 6px;
-    padding: 15px;
-    border-left: 4px solid #dee2e6;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+// Function to delete expired notifications
+function cleanupExpiredNotifications($mysqli) {
+    $query = "UPDATE notifications 
+              SET is_active = 0 
+              WHERE expires_at IS NOT NULL 
+                AND expires_at < NOW() 
+                AND is_active = 1";
+    
+    $stmt = $mysqli->prepare($query);
+    if (!$stmt) {
+        error_log("MySQL prepare error: " . $mysqli->error);
+        return false;
+    }
+    
+    return $stmt->execute();
 }
 
-.notification-item.unread {
-    border-left-color: #007bff;
-    background: #f8f9ff;
+// Function to get notifications with pagination
+function getNotificationsWithPagination($mysqli, $user_id, $page = 1, $per_page = 20, $unread_only = false) {
+    $offset = ($page - 1) * $per_page;
+    $unread_condition = $unread_only ? "AND un.is_read = 0" : "";
+    
+    $query = "SELECT 
+                n.id,
+                n.title,
+                n.message,
+                n.type,
+                n.created_at,
+                n.expires_at,
+                un.is_read,
+                un.read_at,
+                c.name as club_name,
+                u.username as created_by_name
+              FROM notifications n
+              JOIN user_notifications un ON n.id = un.notification_id
+              LEFT JOIN clubs c ON n.club_id = c.id
+              LEFT JOIN users u ON n.created_by = u.id
+              WHERE un.user_id = ? 
+                AND n.is_active = 1 
+                AND (n.expires_at IS NULL OR n.expires_at > NOW())
+                $unread_condition
+              ORDER BY n.created_at DESC
+              LIMIT ? OFFSET ?";
+    
+    $stmt = $mysqli->prepare($query);
+    if (!$stmt) {
+        error_log("MySQL prepare error: " . $mysqli->error);
+        return [];
+    }
+    
+    $stmt->bind_param("iii", $user_id, $per_page, $offset);
+    $stmt->execute();
+    
+    $result = $stmt->get_result();
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
-.notification-item:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transform: translateY(-1px);
+// Function to get total notification count for pagination
+function getTotalNotificationCount($mysqli, $user_id, $unread_only = false) {
+    $unread_condition = $unread_only ? "AND un.is_read = 0" : "";
+    
+    $query = "SELECT COUNT(*) as count 
+              FROM user_notifications un
+              JOIN notifications n ON un.notification_id = n.id
+              WHERE un.user_id = ? 
+                AND n.is_active = 1 
+                AND (n.expires_at IS NULL OR n.expires_at > NOW())
+                $unread_condition";
+    
+    $stmt = $mysqli->prepare($query);
+    if (!$stmt) {
+        error_log("MySQL prepare error: " . $mysqli->error);
+        return 0;
+    }
+    
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    
+    $result = $stmt->get_result();
+    if (!$result) {
+        return 0;
+    }
+    
+    $row = $result->fetch_assoc();
+    return $row ? (int)$row['count'] : 0;
 }
-
-.notification-content {
-    flex: 1;
-}
-
-.notification-title {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 5px;
-}
-
-.notification-message {
-    color: #666;
-    font-size: 14px;
-    margin-bottom: 8px;
-}
-
-.notification-meta {
-    display: flex;
-    gap: 15px;
-    font-size: 12px;
-    color: #888;
-}
-
-.club-tag {
-    background: #e9ecef;
-    padding: 2px 6px;
-    border-radius: 4px;
-}
-
-.unread-indicator {
-    width: 8px;
-    height: 8px;
-    background: #007bff;
-    border-radius: 50%;
-    margin-left: 10px;
-}
-
-.no-notifications {
-    text-align: center;
-    color: #666;
-    padding: 20px;
-    font-style: italic;
-}
-
-.view-all-link {
-    color: #007bff;
-    text-decoration: none;
-    font-size: 14px;
-}
-
-.view-all-link:hover {
-    text-decoration: underline;
-}
-</style>
+?>

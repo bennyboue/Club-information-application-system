@@ -14,6 +14,19 @@ if ($result->num_rows > 0) {
         $clubs[] = $row;
     }
 }
+if (isset($_SESSION['id'])) {
+    $user_id = $_SESSION['id'];
+    $count_query = "SELECT COUNT(*) as count FROM notifications WHERE id = ? AND is_read = 0";
+    $stmt = $conn->prepare($count_query);
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $count_result = $stmt->get_result();
+    if ($count_result->num_rows > 0) {
+        $count_row = $count_result->fetch_assoc();
+        $unread_count = $count_row['count'];
+    }
+    $stmt->close();
+}
 $conn->close();
 ?>
 <!DOCTYPE html>
@@ -63,6 +76,73 @@ $conn->close();
             padding: 10px 18px;
             border-radius: 5px;
             font-weight: bold;
+        }
+         
+         .notifications-icon {
+            position: relative;
+            background-color: rgb(209, 120, 25);
+            color: #fff;
+            padding: 10px 18px;
+            text-decoration: none;
+            border-radius: 5%;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 5px;
+            font-size: 20px;
+            width: 7.5px;
+            height: 18px;
+        }
+
+        .notifications-icon:hover {
+            background-color: rgb(150, 85, 10);
+            transform: scale(1.1);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #ff4444;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 0px 0px;
+            border-radius: 3px;
+            min-width: 2px;
+            text-align: center;
+            line-height: 1.2;
+            border: 2px solid white;
+            display: none;
+        }
+
+        .notification-badge.show {
+            display: block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Bell icon using CSS */
+        .bell-icon {
+            width: 16px;
+            height: 16px;
+            position: relative;
+        }
+
+        .bell-icon::before {
+            content: '🔔';
+            font-size: 20px;
         }
 
         .image-gallery {
@@ -680,6 +760,11 @@ $conn->close();
                 <span class="user-welcome">
                     Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?>!
                 </span>
+                <a href="notifications.php" class="notifications-icon" title="Notifications">
+                    <span class="bell-icon"></span>
+                    <span class="notification-badge <?php echo $unread_count > 0 ? 'show' : ''; ?>">
+                        <?php echo $unread_count > 99 ? '99+' : $unread_count; ?>
+                    </span></a>
                 <?php if ($_SESSION['role'] === 'admin'): ?>
                     <a href="admin_dashboard.php">Admin Dashboard</a>
                 <?php elseif ($_SESSION['role'] === 'club_patron'): ?>
