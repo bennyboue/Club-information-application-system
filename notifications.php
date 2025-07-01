@@ -690,7 +690,7 @@ $conn->close();
             <i class="fas fa-bell"></i> All Notifications
         </div>
         <div>
-            <a href="dashboard.php">
+            <a href="home.php">
                 <i class="fas fa-arrow-left"></i> Back to Dashboard
             </a>
         </div>
