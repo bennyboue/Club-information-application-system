@@ -1,4 +1,10 @@
 <?php
+require __DIR__ . '/vendor/autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\SMTP;
+
 session_start();
 
 // Verify system admin role
@@ -230,40 +236,53 @@ function sendImmediateNotification($mysqli, $title, $content, $target_audience, 
 /**
  * Send email notifications (if email system is enabled)
  */
-// Replace the existing sendEmailNotification function with this:
 function sendEmailNotification($email, $title, $content, $priority = 'normal') {
-    // Configure your SMTP settings here
-    $smtpHost = 'smtp.yourdomain.com';
-    $smtpUsername = 'noreply@yourdomain.com';
-    $smtpPassword = 'your_password';
-    $smtpPort = 587;
-    $smtpSecure = 'tls'; // or 'ssl'
+    $config = [
+        'host' => 'smtp.example.com',
+        'username' => 'your@email.com',
+        'password' => 'your_password',
+        'port' => 587,
+        'encryption' => 'tls',
+        'from_email' => 'noreply@yourschool.edu',
+        'from_name' => 'School Club System'
+    ];
 
-    // Create the Transport
-    $transport = (new Swift_SmtpTransport($smtpHost, $smtpPort, $smtpSecure))
-        ->setUsername($smtpUsername)
-        ->setPassword($smtpPassword);
-
-    // Create the Mailer using your created Transport
-    $mailer = new Swift_Mailer($transport);
-
-    // Create a message
-    $message = (new Swift_Message("[Club System] $title"))
-        ->setFrom([$smtpUsername => 'School Club System'])
-        ->setTo([$email])
-        ->setBody($content);
+    $mail = new PHPMailer(true);
 
     try {
-        // Send the message
-        $result = $mailer->send($message);
-        error_log("Email sent to $email: $title");
+        // Server settings
+        $mail->isSMTP();
+        $mail->Host       = $config['host'];
+        $mail->SMTPAuth   = true;
+        $mail->Username   = $config['username'];
+        $mail->Password   = $config['password'];
+        $mail->SMTPSecure = $config['encryption'];
+        $mail->Port       = $config['port'];
+
+        // Recipients
+        $mail->setFrom($config['from_email'], $config['from_name']);
+        $mail->addAddress($email);
+
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = "[School Clubs] $title";
+        $mail->Body    = nl2br($content);
+        $mail->AltBody = strip_tags($content);
+
+        // Priority
+        if ($priority === 'high') {
+            $mail->Priority = 1;
+            $mail->AddCustomHeader('X-Priority: 1');
+            $mail->AddCustomHeader('Importance: High');
+        }
+
+        $mail->send();
         return true;
     } catch (Exception $e) {
-        error_log("Email failed to $email: " . $e->getMessage());
+        error_log("Mailer Error: " . $mail->ErrorInfo);
         return false;
     }
 }
-
 // =================================================================
 // ADMIN DASHBOARD FUNCTIONALITY
 // =================================================================
@@ -1167,7 +1186,7 @@ tr:hover {
             <div class="user-welcome">
                 <i class="fas fa-user-shield"></i> <?php echo htmlspecialchars($_SESSION['username']); ?>
             </div>
-            <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            <a href="logout.php" class="nav-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </div>
     </div>
 
