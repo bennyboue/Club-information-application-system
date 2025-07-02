@@ -21,42 +21,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $patron_id = intval($_POST['patron_id']);
         $club_id = intval($_POST['club_id']);
 
-        // Get club initials
-        $club_stmt = $conn->prepare("SELECT initials FROM clubs WHERE id = ?");
-        $club_stmt->bind_param("i", $club_id);
-        $club_stmt->execute();
-        $club_result = $club_stmt->get_result();
+        // Check if assignment already exists
+        $check_stmt = $conn->prepare("SELECT id FROM club_managers WHERE user_id = ? AND club_id = ?");
+        $check_stmt->bind_param("ii", $patron_id, $club_id);
+        $check_stmt->execute();
         
-        if ($club_result->num_rows > 0) {
-            $club = $club_result->fetch_assoc();
-            $initials = $club['initials'];
-
-            // Update patron's school_id with club initials
-            $update_stmt = $conn->prepare("UPDATE users SET school_id = CONCAT(school_id, '-', ?) WHERE id = ?");
-            $update_stmt->bind_param("si", $initials, $patron_id);
+        if ($check_stmt->get_result()->num_rows > 0) {
+            $message = "This patron is already assigned to this club!";
+            $message_type = "error";
+        } else {
+            // Create new manager record with patron flag
+            $insert_stmt = $conn->prepare("INSERT INTO club_managers (user_id, club_id, is_patron, status) VALUES (?, ?, 1, 'active')");
+            $insert_stmt->bind_param("ii", $patron_id, $club_id);
             
-            if ($update_stmt->execute()) {
+            if ($insert_stmt->execute()) {
+                // Update user role if needed
+                $update_role = $conn->prepare("UPDATE users SET role = 'club_manager' WHERE id = ? AND role != 'admin'");
+                $update_role->bind_param("i", $patron_id);
+                $update_role->execute();
+                
                 $message = "Patron assigned to club successfully!";
                 $message_type = "success";
             } else {
                 $message = "Error assigning patron: " . $conn->error;
                 $message_type = "error";
             }
-        } else {
-            $message = "Club not found!";
-            $message_type = "error";
         }
     }
 
     if (isset($_POST['unassign_patron'])) {
-        $patron_id = intval($_POST['patron_id']);
-        $initials = trim($_POST['club_initials']);
-
-        // Remove club initials from patron's school_id
-        $update_stmt = $conn->prepare("UPDATE users SET school_id = REPLACE(school_id, CONCAT('-', ?), '') WHERE id = ?");
-        $update_stmt->bind_param("si", $initials, $patron_id);
+        $assignment_id = intval($_POST['assignment_id']);
         
-        if ($update_stmt->execute()) {
+        $delete_stmt = $conn->prepare("DELETE FROM club_managers WHERE id = ?");
+        $delete_stmt->bind_param("i", $assignment_id);
+        
+        if ($delete_stmt->execute()) {
             $message = "Patron unassigned from club successfully!";
             $message_type = "success";
         } else {
@@ -72,13 +71,15 @@ if ($clubs === false) {
     die("Error fetching clubs: " . $conn->error);
 }
 
-// Get all patrons (club_patron role users)
+// Get all patrons (club_managers with is_patron=1)
 $patrons = $conn->query("
-    SELECT u.id, u.username, u.school_id, 
-           GROUP_CONCAT(c.name SEPARATOR ', ') as assigned_clubs
+    SELECT u.id, u.username, 
+           GROUP_CONCAT(c.name SEPARATOR ', ') as assigned_clubs,
+           GROUP_CONCAT(cm.id SEPARATOR ',') as assignment_ids
     FROM users u
-    LEFT JOIN clubs c ON u.school_id LIKE CONCAT('%-', c.initials)
-    WHERE u.role = 'club_patron'
+    JOIN club_managers cm ON u.id = cm.user_id
+    JOIN clubs c ON cm.club_id = c.id
+    WHERE cm.is_patron = 1
     GROUP BY u.id
     ORDER BY u.username
 ");
@@ -86,12 +87,15 @@ if ($patrons === false) {
     die("Error fetching patrons: " . $conn->error);
 }
 
-// Get available patrons (not assigned to any club)
+// Get available patrons (users with club_manager role not assigned as patrons)
 $available_patrons = $conn->query("
-    SELECT id, username 
-    FROM users 
-    WHERE role = 'club_patron' AND school_id NOT LIKE '%-%'
-    ORDER BY username
+    SELECT u.id, u.username 
+    FROM users u
+    WHERE u.role = 'club_manager'
+      AND u.id NOT IN (
+          SELECT user_id FROM club_managers WHERE is_patron = 1
+      )
+    ORDER BY u.username
 ");
 if ($available_patrons === false) {
     die("Error fetching available patrons: " . $conn->error);
@@ -143,6 +147,7 @@ $conn->close();
         
         .unassign-form {
             display: inline;
+            margin-right: 5px;
         }
         
         .btn-sm {
@@ -204,6 +209,10 @@ $conn->close();
                     <div class="form-group">
                         <label><i class="fas fa-club"></i> Select Club</label>
                         <select name="club_id" class="form-control" required>
+                            <?php 
+                            // Reset clubs pointer
+                            $clubs->data_seek(0); 
+                            ?>
                             <?php if ($clubs->num_rows > 0): ?>
                                 <?php while($club = $clubs->fetch_assoc()): ?>
                                     <option value="<?php echo $club['id']; ?>">
@@ -224,46 +233,41 @@ $conn->close();
             
             <!-- Current Assignments -->
             <div class="assignment-form">
-                <h2 class="form-header"><i class="fas fa-list"></i> Current Assignments</h2>
+                <h2 class="form-header"><i class="fas fa-list"></i> Current Patron Assignments</h2>
                 
                 <?php if ($patrons->num_rows > 0): ?>
                     <div class="patrons-list">
                         <?php while($patron = $patrons->fetch_assoc()): ?>
                             <div class="patron-item" style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
                                 <h3 style="margin-bottom: 10px;">
-                                    <?php echo htmlspecialchars($patron['username']); ?>
-                                    <small style="font-size: 0.8rem; color: #666;">(ID: <?php echo htmlspecialchars($patron['school_id']); ?>)</small>
+                                    <i class="fas fa-user-tie"></i> <?php echo htmlspecialchars($patron['username']); ?>
                                 </h3>
                                 
                                 <?php if (!empty($patron['assigned_clubs'])): ?>
                                     <div style="margin-bottom: 10px;">
-                                        <strong>Assigned Clubs:</strong>
+                                        <strong>Patron For Clubs:</strong>
                                         <?php 
                                             $assigned_clubs = explode(', ', $patron['assigned_clubs']);
-                                            foreach ($assigned_clubs as $club_name) {
+                                            $assignment_ids = explode(',', $patron['assignment_ids']);
+                                            
+                                            foreach ($assigned_clubs as $index => $club_name) {
                                                 echo '<span class="club-badge">' . htmlspecialchars($club_name) . '</span>';
                                             }
                                         ?>
                                     </div>
                                     
-                                    <?php 
-                                        // Get club initials for unassign form
-                                        $club_initials = [];
-                                        if (preg_match_all('/-([A-Z]+)/', $patron['school_id'], $matches)) {
-                                            $club_initials = $matches[1];
-                                        }
-                                    ?>
-                                    
-                                    <?php foreach ($club_initials as $initials): ?>
-                                        <form method="POST" class="unassign-form">
-                                            <input type="hidden" name="patron_id" value="<?php echo $patron['id']; ?>">
-                                            <input type="hidden" name="club_initials" value="<?php echo htmlspecialchars($initials); ?>">
-                                            <button type="submit" name="unassign_patron" class="btn btn-danger btn-sm" 
-                                                    onclick="return confirm('Unassign this patron from the club?')">
-                                                <i class="fas fa-unlink"></i> Unassign <?php echo htmlspecialchars($initials); ?>
-                                            </button>
-                                        </form>
-                                    <?php endforeach; ?>
+                                    <div>
+                                        <strong>Unassign:</strong>
+                                        <?php foreach ($assignment_ids as $index => $assignment_id): ?>
+                                            <form method="POST" class="unassign-form">
+                                                <input type="hidden" name="assignment_id" value="<?php echo $assignment_id; ?>">
+                                                <button type="submit" name="unassign_patron" class="btn btn-danger btn-sm" 
+                                                        onclick="return confirm('Unassign this patron from the club?')">
+                                                    <i class="fas fa-unlink"></i> <?php echo htmlspecialchars(explode(', ', $patron['assigned_clubs'])[$index]); ?>
+                                                </button>
+                                            </form>
+                                        <?php endforeach; ?>
+                                    </div>
                                 <?php else: ?>
                                     <div style="color: #666; font-style: italic;">Not assigned to any clubs</div>
                                 <?php endif; ?>
@@ -271,7 +275,7 @@ $conn->close();
                         <?php endwhile; ?>
                     </div>
                 <?php else: ?>
-                    <div class="no-data">No patrons found</div>
+                    <div class="no-data">No patron assignments found</div>
                 <?php endif; ?>
             </div>
         </div>

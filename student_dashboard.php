@@ -26,6 +26,7 @@ $clubs_stmt = $conn->prepare("
     WHERE m.user_id = ? 
     ORDER BY m.joined_at DESC
 ");
+
 $clubs_stmt->bind_param("i", $user_id);
 $clubs_stmt->execute();
 $clubs_result = $clubs_stmt->get_result();
@@ -36,6 +37,7 @@ while($club = $clubs_result->fetch_assoc()) {
     $clubs_data[] = $club;
 }
 $clubs_stmt->close();
+
 
 // Fetch upcoming events from user's clubs and store results in array
 $events_stmt = $conn->prepare("

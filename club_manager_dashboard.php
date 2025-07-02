@@ -13,18 +13,51 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Get patron's school_id to determine which club they manage
-$patron_id = $_SESSION['user_id'];
-$patron_query = $conn->prepare("SELECT school_id FROM users WHERE id = ?");
-$patron_query->bind_param("i", $patron_id);
-$patron_query->execute();
-$patron_result = $patron_query->get_result();
-$patron_data = $patron_result->fetch_assoc();
 
-if (!$patron_data || strpos($patron_data['school_id'], '-') === false) {
-    die("You are not properly assigned as a patron for any club.");
+// Get clubs managed by the current patron
+$patron_id = $_SESSION['user_id'];
+$club_query = $conn->prepare("SELECT id, name, description FROM clubs WHERE patron_id = ?");
+$club_query->bind_param("i", $patron_id);
+$club_query->execute();
+$club_result = $club_query->get_result();
+
+if ($club_result->num_rows === 0) {
+    die("You are not managing any clubs.");
 }
 
+// Fetch all clubs managed by this patron
+$clubs = [];
+while ($club = $club_result->fetch_assoc()) {
+    $clubs[] = $club;
+}
+
+// Handle form submissions
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $club_id = $_POST['club_id'];
+    
+    // Verify the patron manages this club
+    $valid_club = false;
+    foreach ($clubs as $club) {
+        if ($club['id'] == $club_id) {
+            $valid_club = true;
+            break;
+        }
+    }
+    
+    if (!$valid_club) {
+        die("Invalid club selection");
+    }
+
+    if (isset($_POST['add_member'])) {
+        // Add member logic
+        $student_id = $_POST['student_id'];
+        $add_member = $conn->prepare("INSERT INTO memberships (club_id, user_id) VALUES (?, ?)");
+        $add_member->bind_param("ii", $club_id, $student_id);
+        $add_member->execute();
+        
+        $_SESSION['message'] = "Member added successfully!";
+    } 
+}
 // Extract club initials from school_id (format: ID-CLUB_INITIALS)
 list($id_part, $club_initials) = explode('-', $patron_data['school_id'], 2);
 
@@ -96,6 +129,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: club_manager_dashboard.php");
         exit();
     }
+    // NEW: Handle membership request approvals
+    elseif (isset($_POST['approve_request'])) {
+        $request_id = $_POST['request_id'];
+        $student_id = $_POST['student_id'];
+        
+        // Approve request
+        $approve_request = $conn->prepare("UPDATE membership_requests SET status = 'approved' WHERE id = ?");
+        $approve_request->bind_param("i", $request_id);
+        $approve_request->execute();
+        
+        // Add to memberships
+        $add_member = $conn->prepare("INSERT INTO memberships (club_id, user_id) VALUES (?, ?)");
+        $add_member->bind_param("ii", $club_id, $student_id);
+        $add_member->execute();
+        
+        $_SESSION['message'] = "Membership request approved!";
+        header("Location: club_manager_dashboard.php");
+        exit();
+    }
+    // NEW: Handle membership request rejections
+    elseif (isset($_POST['reject_request'])) {
+        $request_id = $_POST['request_id'];
+        
+        // Reject request
+        $reject_request = $conn->prepare("UPDATE membership_requests SET status = 'rejected' WHERE id = ?");
+        $reject_request->bind_param("i", $request_id);
+        $reject_request->execute();
+        
+        $_SESSION['message'] = "Membership request rejected!";
+        header("Location: club_manager_dashboard.php");
+        exit();
+    }
 }
 
 // Get club members
@@ -118,6 +183,15 @@ $events_query = $conn->prepare("SELECT id, title as event_name, event_date, loca
 $events_query->bind_param("i", $club_id);
 $events_query->execute();
 $events_result = $events_query->get_result();
+
+// NEW: Get pending membership requests
+$requests_query = $conn->prepare("SELECT mr.id, u.id as user_id, u.username, u.email, mr.created_at 
+                                FROM membership_requests mr 
+                                JOIN users u ON mr.user_id = u.id 
+                                WHERE mr.club_id = ? AND mr.status = 'pending'");
+$requests_query->bind_param("i", $club_id);
+$requests_query->execute();
+$requests_result = $requests_query->get_result();
 
 $conn->close();
 ?>
@@ -167,12 +241,37 @@ $conn->close();
     </div>
 
     <div class="manager-container">
-        <?php if (isset($_SESSION['message'])): ?>
-            <div class="alert alert-success">
-                <?php echo $_SESSION['message']; unset($_SESSION['message']); ?>
-            </div>
-        <?php endif; ?>
+    <!-- Club selection dropdown -->
+    <div class="club-selection">
+        <label for="club_selector">Select Club:</label>
+        <select id="club_selector" onchange="updateClubDisplay(this.value)">
+            <?php foreach ($clubs as $club): ?>
+                <option value="<?= $club['id'] ?>"><?= htmlspecialchars($club['name']) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
 
+    <!-- Club-specific content (dynamically updated via JS) -->
+    <div id="club-content">
+        <!-- Content will be loaded via AJAX -->
+    </div>
+</div>
+
+<script>
+function updateClubDisplay(clubId) {
+    fetch(`club_details.php?club_id=${clubId}`)
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById('club-content').innerHTML = data;
+        });
+}
+
+// Load first club by default
+document.addEventListener('DOMContentLoaded', () => {
+    const firstClub = document.querySelector('#club_selector option').value;
+    updateClubDisplay(firstClub);
+});
+</script>
         <div class="club-info-card">
             <div class="club-name"><?php echo htmlspecialchars($club['name']); ?></div>
             <div class="club-description"><?php echo htmlspecialchars($club['description']); ?></div>
@@ -180,6 +279,8 @@ $conn->close();
 
         <div class="tabs">
             <div class="tab active" onclick="openTab(event, 'members')">Members</div>
+            <!-- NEW: Membership Requests Tab -->
+            <div class="tab" onclick="openTab(event, 'requests')">Membership Requests</div>
             <div class="tab" onclick="openTab(event, 'announcements')">Announcements</div>
             <div class="tab" onclick="openTab(event, 'events')">Events</div>
         </div>
@@ -235,6 +336,53 @@ $conn->close();
                         <button type="submit" name="add_member" class="btn btn-success">Add Member</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- NEW: Membership Requests Tab -->
+        <div id="requests" class="tab-content">
+            <div class="manager-card">
+                <h2 class="manager-card-header">Pending Membership Requests</h2>
+                
+                <?php if ($requests_result->num_rows > 0): ?>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Request Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while ($request = $requests_result->fetch_assoc()): ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($request['username']); ?></td>
+                                <td><?php echo htmlspecialchars($request['email']); ?></td>
+                                <td><?php echo date('M j, Y', strtotime($request['created_at'])); ?></td>
+                                <td>
+                                    <form method="POST" style="display:inline-block;">
+                                        <input type="hidden" name="request_id" value="<?php echo $request['id']; ?>">
+                                        <input type="hidden" name="student_id" value="<?php echo $request['user_id']; ?>">
+                                        <button type="submit" name="approve_request" class="btn btn-success btn-sm">
+                                            Approve
+                                        </button>
+                                    </form>
+                                    <form method="POST" style="display:inline-block;">
+                                        <input type="hidden" name="request_id" value="<?php echo $request['id']; ?>">
+                                        <button type="submit" name="reject_request" class="btn btn-danger btn-sm"
+                                                onclick="return confirm('Are you sure you want to reject this request?')">
+                                            Reject
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+                <?php else: ?>
+                    <p>No pending membership requests.</p>
+                <?php endif; ?>
             </div>
         </div>
 

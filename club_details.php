@@ -34,6 +34,12 @@ $members_stmt->bind_param("i", $club_id);
 $members_stmt->execute();
 $members_result = $members_stmt->get_result();
 
+$members_stmt = $conn->prepare("
+    SELECT u.id, u.username 
+    FROM memberships m
+    JOIN users u ON m.user_id = u.id
+    WHERE m.club_id = ? AND m.status = 'approved'
+");
 // Check if current user is a member
 $is_member = false;
 $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
@@ -42,6 +48,35 @@ if ($user_id > 0) {
     $member_check->bind_param("ii", $user_id, $club_id);
     $member_check->execute();
     $is_member = $member_check->get_result()->num_rows > 0;
+}
+// When student clicks "Join Club"
+if (isset($_POST['join_club'])) {
+    $club_id = intval($_POST['club_id']);
+    $user_id = $_SESSION['user_id'];
+    
+    // Check if request already exists
+    $check_stmt = $conn->prepare("SELECT id FROM memberships WHERE user_id = ? AND club_id = ?");
+    $check_stmt->bind_param("ii", $user_id, $club_id);
+    $check_stmt->execute();
+    
+    if ($check_stmt->get_result()->num_rows > 0) {
+        echo "You already have a pending request for this club";
+    } else {
+        // Create membership request
+        $insert_stmt = $conn->prepare("INSERT INTO memberships (user_id, club_id, status) VALUES (?, ?, 'pending')");
+        $insert_stmt->bind_param("ii", $user_id, $club_id);
+        
+        if ($insert_stmt->execute()) {
+            // Send notification to club manager
+            $notification_title = "New Membership Request";
+            $notification_content = "Student {$_SESSION['username']} wants to join your club";
+            createNotification($conn, $notification_title, $notification_content, $club_id, 'club_managers');
+            
+            echo "Request sent to club manager for approval";
+        } else {
+            echo "Error submitting request";
+        }
+    }
 }
 
 $conn->close();

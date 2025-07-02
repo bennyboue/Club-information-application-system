@@ -315,16 +315,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 // Create club
-                $stmt = $mysqli->prepare("INSERT INTO clubs (name, initials, description, created_by) VALUES (?, ?, ?, ?)");
-                if (!$stmt) {
-                    throw new Exception("Prepare failed: " . $mysqli->error);
-                }
-                $stmt->bind_param("sssi", $name, $initials, $description, $_SESSION['user_id']);
-                if (!$stmt->execute()) {
-                    throw new Exception("Execute failed: " . $stmt->error);
-                }
-                $club_id = $mysqli->insert_id;
+               // After validating form data
+$patron_id = $_SESSION['user_id'];
 
+$stmt = $conn->prepare("INSERT INTO clubs (name, initials, description, patron_id) VALUES (?, ?, ?, ?)");
+$stmt->bind_param("sssi", $name, $initials, $description, $patron_id);
+$stmt->execute();
+
+// Update user role to club_patron
+$update_role = $conn->prepare("UPDATE users SET role = 'club_manager' WHERE id = ?");
+$update_role->bind_param("i", $patron_id);
+$update_role->execute();
+
+// Update session role
+$_SESSION['role'] = 'club_manager';
                 // Create club manager record
                 $manager_stmt = $mysqli->prepare("INSERT INTO club_managers (user_id, club_id) VALUES (?, ?)");
                 if (!$manager_stmt) {
