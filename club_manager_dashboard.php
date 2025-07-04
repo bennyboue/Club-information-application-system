@@ -35,9 +35,18 @@ while ($club = $club_result->fetch_assoc()) {
 }
 
 // Handle form submissions
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+// Determine selected club_id from POST, GET, or default to first club
+if (isset($_POST['club_id'])) {
     $club_id = $_POST['club_id'];
-    
+} elseif (isset($_GET['club_id'])) {
+    $club_id = $_GET['club_id'];
+} else {
+    $club_id = $clubs[0]['id'];
+}
+
+// Handle form submissions
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Verify the patron manages this club
     $valid_club = false;
     foreach ($clubs as $club) {
@@ -46,7 +55,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             break;
         }
     }
-    
     if (!$valid_club) {
         die("Invalid club selection");
     }
@@ -79,10 +87,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $content = $_POST['announcement_content'];
         $post_announcement = $conn->prepare("INSERT INTO announcements (club_id, title, content, created_by) VALUES (?, ?, ?, ?)");
         $post_announcement->bind_param("issi", $club_id, $title, $content, $patron_id);
-        $post_announcement->execute();
-        
-        $_SESSION['message'] = "Announcement posted successfully!";
-        header("Location: club_manager_dashboard.php");
+        if ($post_announcement->execute()) {
+            $_SESSION['message'] = "Announcement posted successfully!";
+        } else {
+            $_SESSION['message'] = "Error posting announcement: " . $post_announcement->error;
+        }
+        header("Location: club_manager_dashboard.php?club_id=$club_id");
         exit();
     } 
     elseif (isset($_POST['add_event'])) {
@@ -94,10 +104,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Updated to match your database schema (no location field)
         $add_event = $conn->prepare("INSERT INTO events (club_id, title, event_date, description) VALUES (?, ?, ?, ?)");
         $add_event->bind_param("isss", $club_id, $event_name, $event_date, $event_description);
-        $add_event->execute();
-        
-        $_SESSION['message'] = "Event added successfully!";
-        header("Location: club_manager_dashboard.php");
+        if ($add_event->execute()) {
+            $_SESSION['message'] = "Event added successfully!";
+        } else {
+            $_SESSION['message'] = "Error adding event: " . $add_event->error;
+        }
+        header("Location: club_manager_dashboard.php?club_id=$club_id");
         exit();
     }
     elseif (isset($_POST['approve_request'])) {
@@ -133,8 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Get the first club for initial display
-$first_club_id = $clubs[0]['id'];
-$club_id = $first_club_id;
+// $club_id is already set above
 
 // Get club members
 $members_query = $conn->prepare("SELECT u.id, u.username, u.email FROM users u JOIN memberships m ON u.id = m.user_id WHERE m.club_id = ?");
@@ -486,7 +497,12 @@ $conn->close();
         </div>
     </div>
 
-    <div class="manager-container">
+<div class="manager-container">
+    <?php if (isset($_SESSION['message'])): ?>
+        <div style="background:#ffeeba;color:#856404;padding:10px 20px;border-radius:5px;margin-bottom:20px;">
+            <?php echo $_SESSION['message']; unset($_SESSION['message']); ?>
+        </div>
+    <?php endif; ?>
         <!-- Club selection dropdown -->
         <div class="club-selection">
             <label for="club_selector">Select Club:</label>
