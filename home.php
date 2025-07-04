@@ -752,8 +752,8 @@ $conn->close();
                 </span>
                 <?php if ($_SESSION['role'] === 'admin'): ?>
                     <a href="admin_dashboard.php">Admin Dashboard</a>
-                <?php elseif ($_SESSION['role'] === 'club_patron'): ?>
-                    <a href="patron_dashboard.php">Patron Dashboard</a>
+                <?php elseif ($_SESSION['role'] === 'club_manager'): ?>
+                    <a href="club_manager_dashboard.php">Patron Dashboard</a>
                 <?php else: ?>
                     <a href="student_dashboard.php">Dashboard</a>
                 <?php endif; ?>
