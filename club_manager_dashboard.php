@@ -671,7 +671,7 @@ $requests_result = $requests_query->get_result();
                         <label for="student_id">Select Student</label>
                         <select id="student_id" name="student_id" class="form-control" required>
                             <option value="">-- Select a student --</option>
-                            <?php while ($student = $students_query->fetch_assoc()): ?>
+                            <?php while ($student = $students_result->fetch_assoc()): ?>
                             <option value="<?php echo $student['id']; ?>"><?php echo htmlspecialchars($student['username']); ?></option>
                             <?php endwhile; ?>
                         </select>
