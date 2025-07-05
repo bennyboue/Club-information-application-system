@@ -322,7 +322,7 @@ $stmt = $conn->prepare("INSERT INTO clubs (name, initials, description, patron_i
 $stmt->bind_param("sssi", $name, $initials, $description, $patron_id);
 $stmt->execute();
 
-// Update user role to club_patron
+// Update user role to club_manager
 $update_role = $conn->prepare("UPDATE users SET role = 'club_manager' WHERE id = ?");
 $update_role->bind_param("i", $patron_id);
 $update_role->execute();
