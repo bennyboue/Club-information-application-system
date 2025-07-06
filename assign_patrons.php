@@ -12,6 +12,10 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
+// Check if is_patron column exists
+$column_check = $conn->query("SHOW COLUMNS FROM club_managers LIKE 'is_patron'");
+$has_patron_column = ($column_check->num_rows > 0);
+
 $message = "";
 $message_type = "";
 
@@ -30,8 +34,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = "This patron is already assigned to this club!";
             $message_type = "error";
         } else {
-            // Create new manager record with patron flag
-            $insert_stmt = $conn->prepare("INSERT INTO club_managers (user_id, club_id, is_patron, status) VALUES (?, ?, 1, 'active')");
+            // Create new manager record (with patron flag if column exists)
+            $sql = $has_patron_column 
+                ? "INSERT INTO club_managers (user_id, club_id, is_patron, status) VALUES (?, ?, 1, 'active')"
+                : "INSERT INTO club_managers (user_id, club_id, status) VALUES (?, ?, 'active')";
+            
+            $insert_stmt = $conn->prepare($sql);
             $insert_stmt->bind_param("ii", $patron_id, $club_id);
             
             if ($insert_stmt->execute()) {
@@ -71,38 +79,56 @@ if ($clubs === false) {
     die("Error fetching clubs: " . $conn->error);
 }
 
-// Get all patrons (club_managers with is_patron=1)
-$patrons = $conn->query("
-    SELECT u.id, u.username, 
-           GROUP_CONCAT(c.name SEPARATOR ', ') as assigned_clubs,
-           GROUP_CONCAT(cm.id SEPARATOR ',') as assignment_ids
-    FROM users u
-    JOIN club_managers cm ON u.id = cm.user_id
-    JOIN clubs c ON cm.club_id = c.id
-    WHERE cm.is_patron = 1
-    GROUP BY u.id
-    ORDER BY u.username
-");
+// Get all patrons (club_managers)
+$patrons_query = $has_patron_column 
+    ? "SELECT u.id, u.username, 
+              GROUP_CONCAT(c.name SEPARATOR ', ') as assigned_clubs,
+              GROUP_CONCAT(cm.id SEPARATOR ',') as assignment_ids
+       FROM users u
+       JOIN club_managers cm ON u.id = cm.user_id
+       JOIN clubs c ON cm.club_id = c.id
+       WHERE cm.is_patron = 1
+       GROUP BY u.id
+       ORDER BY u.username"
+    : "SELECT u.id, u.username, 
+              GROUP_CONCAT(c.name SEPARATOR ', ') as assigned_clubs,
+              GROUP_CONCAT(cm.id SEPARATOR ',') as assignment_ids
+       FROM users u
+       JOIN club_managers cm ON u.id = cm.user_id
+       JOIN clubs c ON cm.club_id = c.id
+       GROUP BY u.id
+       ORDER BY u.username";
+
+$patrons = $conn->query($patrons_query);
 if ($patrons === false) {
     die("Error fetching patrons: " . $conn->error);
 }
 
 // Get available patrons (users with club_manager role not assigned as patrons)
-$available_patrons = $conn->query("
-    SELECT u.id, u.username 
-    FROM users u
-    WHERE u.role = 'club_manager'
-      AND u.id NOT IN (
-          SELECT user_id FROM club_managers WHERE is_patron = 1
-      )
-    ORDER BY u.username
-");
+$available_patrons_query = $has_patron_column
+    ? "SELECT u.id, u.username 
+       FROM users u
+       WHERE u.role = 'club_manager'
+         AND u.id NOT IN (
+             SELECT user_id FROM club_managers WHERE is_patron = 1
+         )
+       ORDER BY u.username"
+    : "SELECT u.id, u.username 
+       FROM users u
+       WHERE u.role = 'club_manager'
+         AND u.id NOT IN (
+             SELECT user_id FROM club_managers
+         )
+       ORDER BY u.username";
+
+$available_patrons = $conn->query($available_patrons_query);
 if ($available_patrons === false) {
     die("Error fetching available patrons: " . $conn->error);
 }
 
 $conn->close();
 ?>
+
 
 <!DOCTYPE html>
 <html>

@@ -579,7 +579,7 @@ $conn->close();
         .footer-section p, .footer-section ul {
             margin: 10px 0;
             line-height: 1.6;
-            color: rgb(253, 6, 154);
+            color: rgb(255, 255, 255);
         }
 
         .footer-section ul {

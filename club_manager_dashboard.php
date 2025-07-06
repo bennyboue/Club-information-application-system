@@ -1,7 +1,11 @@
 <?php
 session_start();
 
-// Check if user is logged in and is a club patron
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Check if user is logged in and is a club manager
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'club_manager') {
     header('Location: login.php');
     exit();
@@ -13,20 +17,25 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Get clubs managed by the current patron from club_managers table
-$patron_id = $_SESSION['user_id'];
+// Get clubs managed by the current user
+$manager_id = $_SESSION['user_id'];
 $club_query = $conn->prepare("
     SELECT c.id, c.name, c.description 
     FROM clubs c
     INNER JOIN club_managers cm ON c.id = cm.club_id
-    WHERE cm.user_id = ? AND cm.is_patron = 1
+    WHERE cm.user_id = ? AND cm.status = 'active'
 ");
-$club_query->bind_param("i", $patron_id);
+
+if (!$club_query) {
+    die("Error preparing club query: " . $conn->error);
+}
+
+$club_query->bind_param("i", $manager_id);
 $club_query->execute();
 $club_result = $club_query->get_result();
 
 if ($club_result->num_rows === 0) {
-    die("You are not managing any clubs as a patron.");
+    die("You are not managing any clubs.");
 }
 
 $clubs = [];
@@ -34,13 +43,11 @@ while ($club = $club_result->fetch_assoc()) {
     $clubs[] = $club;
 }
 
-// Handle form submissions
-
-// Determine selected club_id from POST, GET, or default to first club
+// Determine selected club_id
 if (isset($_POST['club_id'])) {
-    $club_id = $_POST['club_id'];
+    $club_id = intval($_POST['club_id']);
 } elseif (isset($_GET['club_id'])) {
-    $club_id = $_GET['club_id'];
+    $club_id = intval($_GET['club_id']);
 } else {
     $club_id = $clubs[0]['id'];
 }
@@ -60,7 +67,7 @@ if (!$current_club) {
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Verify the patron manages this club
+    // Verify the user manages this club
     $valid_club = false;
     foreach ($clubs as $club) {
         if ($club['id'] == $club_id) {
@@ -68,6 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             break;
         }
     }
+    
     if (!$valid_club) {
         die("Invalid club selection");
     }
@@ -95,11 +103,18 @@ header("Location: club_manager_dashboard.php?club_id=$club_id");
 exit();
     } 
     elseif (isset($_POST['post_announcement'])) {
-        // Post new announcement
-        $title = $_POST['announcement_title'];
-        $content = $_POST['announcement_content'];
-        $post_announcement = $conn->prepare("INSERT INTO announcements (club_id, title, content, created_by) VALUES (?, ?, ?, ?)");
-        $post_announcement->bind_param("issi", $club_id, $title, $content, $patron_id);
+        $title = $conn->real_escape_string(trim($_POST['announcement_title']));
+        $content = $conn->real_escape_string(trim($_POST['announcement_content']));
+        
+        $post_announcement = $conn->prepare("
+            INSERT INTO announcements (club_id, title, content, created_by, status) 
+            VALUES (?, ?, ?, ?, 'published')
+        ");
+        if (!$post_announcement) {
+            die("Error preparing announcement query: " . $conn->error);
+        }
+        
+        $post_announcement->bind_param("issi", $club_id, $title, $content, $manager_id);
         if ($post_announcement->execute()) {
             $_SESSION['message'] = "Announcement posted successfully!";
         } else {
@@ -109,13 +124,18 @@ exit();
         exit();
     } 
     elseif (isset($_POST['add_event'])) {
-        // Add new event - REMOVED LOCATION FIELD
-        $event_name = $_POST['event_name'];
-        $event_date = $_POST['event_date'];
-        $event_description = $_POST['event_description'];
+        $event_name = $conn->real_escape_string(trim($_POST['event_name']));
+        $event_date = $conn->real_escape_string(trim($_POST['event_date']));
+        $event_description = $conn->real_escape_string(trim($_POST['event_description']));
         
-        // Updated to match your database schema (no location field)
-        $add_event = $conn->prepare("INSERT INTO events (club_id, title, event_date, description) VALUES (?, ?, ?, ?)");
+        $add_event = $conn->prepare("
+            INSERT INTO events (club_id, title, event_date, description) 
+            VALUES (?, ?, ?, ?)
+        ");
+        if (!$add_event) {
+            die("Error preparing event query: " . $conn->error);
+        }
+        
         $add_event->bind_param("isss", $club_id, $event_name, $event_date, $event_description);
         if ($add_event->execute()) {
             $_SESSION['message'] = "Event added successfully!";
@@ -126,12 +146,20 @@ exit();
         exit();
     }
     elseif (isset($_POST['approve_request'])) {
-        $request_id = $_POST['request_id'];
-        $student_id = $_POST['student_id'];
+        $request_id = intval($_POST['request_id']);
+        $student_id = intval($_POST['student_id']);
         
-        // Approve request
-        $approve_request = $conn->prepare("UPDATE membership_requests SET status = 'approved' WHERE id = ?");
-        $approve_request->bind_param("i", $request_id);
+        // Update request status
+        $approve_request = $conn->prepare("
+            UPDATE membership_requests 
+            SET status = 'approved' 
+            WHERE id = ? AND club_id = ?
+        ");
+        if (!$approve_request) {
+            die("Error preparing approve request query: " . $conn->error);
+        }
+        
+        $approve_request->bind_param("ii", $request_id, $club_id);
         $approve_request->execute();
         
         // Add to memberships
@@ -144,7 +172,7 @@ header("Location: club_manager_dashboard.php?club_id=$club_id");
 exit();
     }
     elseif (isset($_POST['reject_request'])) {
-        $request_id = $_POST['request_id'];
+        $request_id = intval($_POST['request_id']);
         
         // Reject request
         $reject_request = $conn->prepare("UPDATE membership_requests SET status = 'rejected' WHERE id = ?");
@@ -157,40 +185,85 @@ exit();
     }
 }
 
-// Get the first club for initial display
-// $club_id is already set above
-
 // Get club members
-$members_query = $conn->prepare("SELECT u.id, u.username, u.email FROM users u JOIN memberships m ON u.id = m.user_id WHERE m.club_id = ?");
+$members_query = $conn->prepare("
+    SELECT u.id, u.username, u.email 
+    FROM users u 
+    JOIN memberships m ON u.id = m.user_id 
+    WHERE m.club_id = ? AND m.status = 'approved'
+");
+if (!$members_query) {
+    die("Error preparing members query: " . $conn->error);
+}
 $members_query->bind_param("i", $club_id);
 $members_query->execute();
 $members_result = $members_query->get_result();
 
-// Get all students (for adding new members)
-$students_query = $conn->query("SELECT id, username FROM users WHERE role = 'student' AND id NOT IN (SELECT user_id FROM memberships WHERE club_id = $club_id)");
+// Get all students not in this club
+$students_query = $conn->prepare("
+    SELECT u.id, u.username 
+    FROM users u 
+    WHERE u.role = 'student' 
+    AND u.id NOT IN (
+        SELECT m.user_id 
+        FROM memberships m 
+        WHERE m.club_id = ? AND m.status = 'approved'
+    )
+");
+if (!$students_query) {
+    die("Error preparing students query: " . $conn->error);
+}
+$students_query->bind_param("i", $club_id);
+$students_query->execute();
+$students_result = $students_query->get_result();
 
 // Get announcements
-$announcements_query = $conn->prepare("SELECT a.id, a.title, a.content, a.created_at, u.username FROM announcements a JOIN users u ON a.created_by = u.id WHERE a.club_id = ? ORDER BY a.created_at DESC LIMIT 5");
+$announcements_query = $conn->prepare("
+    SELECT a.id, a.title, a.content, a.created_at, u.username 
+    FROM announcements a 
+    JOIN users u ON a.created_by = u.id 
+    WHERE a.club_id = ? 
+    ORDER BY a.created_at DESC 
+    LIMIT 5
+");
+if (!$announcements_query) {
+    die("Error preparing announcements query: " . $conn->error);
+}
 $announcements_query->bind_param("i", $club_id);
 $announcements_query->execute();
 $announcements_result = $announcements_query->get_result();
 
-// Get events - REMOVED LOCATION FIELD
-$events_query = $conn->prepare("SELECT id, title as event_name, event_date, description FROM events WHERE club_id = ? ORDER BY event_date ASC");
+// Get events
+$events_query = $conn->prepare("
+    SELECT id, title, event_date, description 
+    FROM events 
+    WHERE club_id = ? 
+    ORDER BY event_date ASC
+");
+if (!$events_query) {
+    die("Error preparing events query: " . $conn->error);
+}
 $events_query->bind_param("i", $club_id);
 $events_query->execute();
 $events_result = $events_query->get_result();
 
-// Get pending membership requests
-$requests_query = $conn->prepare("SELECT mr.id, u.id as user_id, u.username, u.email, mr.created_at 
-                                FROM membership_requests mr 
-                                JOIN users u ON mr.user_id = u.id 
-                                WHERE mr.club_id = ? AND mr.status = 'pending'");
-$requests_query->bind_param("i", $club_id);
-$requests_query->execute();
-$requests_result = $requests_query->get_result();
+// Get pending membership requests - Updated to match your schema
+$requests_query = $conn->prepare("
+    SELECT m.id, u.id as user_id, u.username, u.email, m.joined_at as created_at 
+    FROM memberships m 
+    JOIN users u ON m.user_id = u.id 
+    WHERE m.club_id = ? AND m.status = 'pending'
+");
 
-$conn->close();
+if (!$requests_query) {
+    die("Error preparing requests query: " . $conn->error);
+}
+
+$requests_query->bind_param("i", $club_id);
+if (!$requests_query->execute()) {
+    die("Error executing requests query: " . $requests_query->error);
+}
+$requests_result = $requests_query->get_result();
 ?>
 
 <!DOCTYPE html>
@@ -581,7 +654,7 @@ $conn->close();
                         <label for="student_id">Select Student</label>
                         <select id="student_id" name="student_id" class="form-control" required>
                             <option value="">-- Select a student --</option>
-                            <?php while ($student = $students_query->fetch_assoc()): ?>
+                            <?php while ($student = $students_result->fetch_assoc()): ?>
                             <option value="<?php echo $student['id']; ?>"><?php echo htmlspecialchars($student['username']); ?></option>
                             <?php endwhile; ?>
                         </select>

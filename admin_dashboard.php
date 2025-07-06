@@ -1,6 +1,5 @@
 <?php
 require __DIR__ . '/vendor/autoload.php';
-
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\SMTP;
@@ -19,12 +18,8 @@ if ($mysqli->connect_error) {
 }
 
 // =================================================================
-// ENHANCED NOTIFICATION FUNCTIONS
+// ENHANCED NOTIFICATION FUNCTIONS (UPDATED TO MATCH YOUR SCHEMA)
 // =================================================================
-/**
- * Create notification when announcement is posted
- * Improved with better error handling and logging
- */
 function createNotificationForAnnouncement($mysqli, $title, $content, $club_id, $admin_id, $target_audience = 'all', $priority = 'normal') {
     try {
         // Validate input parameters
@@ -35,8 +30,21 @@ function createNotificationForAnnouncement($mysqli, $title, $content, $club_id, 
         // Start transaction
         $mysqli->begin_transaction();
         
-        // Insert into notifications table with enhanced fields
-        $notification_query = "INSERT INTO notifications (title, message, type, priority, target_audience, club_id, created_by, created_at, expires_at) VALUES (?, ?, 'announcement', ?, ?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY))";
+        // Insert into notifications table (matches your schema)
+        $notification_query = "INSERT INTO notifications (
+            title, 
+            message, 
+            type, 
+            priority, 
+            target_audience, 
+            club_id, 
+            created_by, 
+            created_at, 
+            expires_at,
+            is_immediate,
+            is_active
+        ) VALUES (?, ?, 'announcement', ?, ?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 0, 1)";
+        
         $notification_stmt = $mysqli->prepare($notification_query);
         
         if (!$notification_stmt) {
@@ -51,15 +59,27 @@ function createNotificationForAnnouncement($mysqli, $title, $content, $club_id, 
         
         $notification_id = $mysqli->insert_id;
         
-        // Insert the announcement with notification link
-        $announcement_query = "INSERT INTO announcements (title, content, club_id, notification_id, created_by, created_at) VALUES (?, ?, ?, ?, ?, NOW())";
+        // Insert the announcement (matches your announcements table schema)
+        $announcement_query = "INSERT INTO announcements (
+            title, 
+            content, 
+            club_id, 
+            notification_id, 
+            created_by, 
+            created_at,
+            announcement_type,
+            priority,
+            status,
+            is_public
+        ) VALUES (?, ?, ?, ?, ?, NOW(), 'general', ?, 'published', 1)";
+        
         $announcement_stmt = $mysqli->prepare($announcement_query);
         
         if (!$announcement_stmt) {
             throw new Exception("Failed to prepare announcement statement: " . $mysqli->error);
         }
         
-        $announcement_stmt->bind_param("ssiii", $title, $content, $club_id, $notification_id, $admin_id);
+        $announcement_stmt->bind_param("ssiis", $title, $content, $club_id, $notification_id, $admin_id, $priority);
         
         if (!$announcement_stmt->execute()) {
             throw new Exception("Failed to insert announcement: " . $announcement_stmt->error);
@@ -87,10 +107,6 @@ function createNotificationForAnnouncement($mysqli, $title, $content, $club_id, 
     }
 }
 
-/**
- * Enhanced function to create individual user notification entries
- * Returns count of affected users
- */
 function createUserNotifications($mysqli, $notification_id, $target_audience, $club_id) {
     $users_query = "";
     $params = [];
@@ -103,24 +119,21 @@ function createUserNotifications($mysqli, $notification_id, $target_audience, $c
             
         case 'club_managers':
             if ($club_id) {
-                // Only notify managers of the specific club
                 $users_query = "SELECT DISTINCT u.id, u.username, u.email FROM users u 
                                JOIN club_managers cm ON u.id = cm.user_id 
                                WHERE u.role = 'club_manager' AND cm.club_id = ?";
                 $params[] = $club_id;
                 $param_types = "i";
             } else {
-                // Notify all club managers
                 $users_query = "SELECT DISTINCT u.id, u.username, u.email FROM users u WHERE u.role = 'club_manager'";
             }
             break;
             
         case 'club_members':
             if ($club_id) {
-                // All members of specific club
                 $users_query = "SELECT DISTINCT u.id, u.username, u.email FROM users u 
-                               JOIN club_members cm ON u.id = cm.user_id 
-                               WHERE cm.club_id = ?";
+                               JOIN memberships m ON u.id = m.user_id 
+                               WHERE m.club_id = ? AND m.status = 'approved'";
                 $params[] = $club_id;
                 $param_types = "i";
             } else {
@@ -135,14 +148,12 @@ function createUserNotifications($mysqli, $notification_id, $target_audience, $c
         case 'all':
         default:
             if ($club_id) {
-                // All members of specific club + all admins
                 $users_query = "SELECT DISTINCT u.id, u.username, u.email FROM users u 
-                               LEFT JOIN club_members cm ON u.id = cm.user_id 
-                               WHERE (cm.club_id = ? OR u.role = 'admin')";
+                               LEFT JOIN memberships m ON u.id = m.user_id 
+                               WHERE (m.club_id = ? AND m.status = 'approved') OR u.role = 'admin'";
                 $params[] = $club_id;
                 $param_types = "i";
             } else {
-                // All active users
                 $users_query = "SELECT DISTINCT u.id, u.username, u.email FROM users u";
             }
             break;
@@ -165,7 +176,14 @@ function createUserNotifications($mysqli, $notification_id, $target_audience, $c
     $users_result = $users_stmt->get_result();
     
     // Insert notification for each user
-    $insert_user_notification = "INSERT IGNORE INTO user_notifications (user_id, notification_id, status, created_at) VALUES (?, ?, 'unread', NOW())";
+    $insert_user_notification = "INSERT IGNORE INTO user_notifications (
+        user_id, 
+        notification_id, 
+        status, 
+        created_at,
+        is_read
+    ) VALUES (?, ?, 'unread', NOW(), 0)";
+    
     $user_notif_stmt = $mysqli->prepare($insert_user_notification);
     
     if (!$user_notif_stmt) {
@@ -193,11 +211,15 @@ function createUserNotifications($mysqli, $notification_id, $target_audience, $c
     ];
 }
 
-/**
- * Log notification activity for audit trail
- */
 function logNotificationActivity($mysqli, $notification_id, $admin_id, $action, $details) {
-    $log_query = "INSERT INTO notification_logs (notification_id, admin_id, action, details, created_at) VALUES (?, ?, ?, ?, NOW())";
+    $log_query = "INSERT INTO notification_logs (
+        notification_id, 
+        admin_id, 
+        action, 
+        details, 
+        created_at
+    ) VALUES (?, ?, ?, ?, NOW())";
+    
     $log_stmt = $mysqli->prepare($log_query);
     
     if ($log_stmt) {
@@ -207,94 +229,81 @@ function logNotificationActivity($mysqli, $notification_id, $admin_id, $action, 
     }
 }
 
-/**
- * Send immediate notification (for urgent announcements)
- */
-function sendImmediateNotification($mysqli, $title, $content, $target_audience, $club_id, $admin_id) {
-    try {
-        $mysqli->begin_transaction();
-        
-        // Create notification with high priority
-        $result = createNotificationForAnnouncement($mysqli, $title, $content, $club_id, $admin_id, $target_audience, 'high');
-        
-        // Mark as immediate for faster processing
-        $update_query = "UPDATE notifications SET is_immediate = 1, sent_at = NOW() WHERE id = ?";
-        $update_stmt = $mysqli->prepare($update_query);
-        $update_stmt->bind_param("i", $result['notification_id']);
-        $update_stmt->execute();
-        
-        $mysqli->commit();
-        
-        return $result;
-        
-    } catch (Exception $e) {
-        $mysqli->rollback();
-        throw $e;
-    }
-}
-
-/**
- * Send email notifications (if email system is enabled)
- */
-function sendEmailNotification($email, $title, $content, $priority = 'normal') {
-    $config = [
-        'host' => 'smtp.example.com',
-        'username' => 'your@email.com',
-        'password' => 'your_password',
-        'port' => 587,
-        'encryption' => 'tls',
-        'from_email' => 'noreply@yourschool.edu',
-        'from_name' => 'School Club System'
-    ];
-
-    $mail = new PHPMailer(true);
-
-    try {
-        // Server settings
-        $mail->isSMTP();
-        $mail->Host       = $config['host'];
-        $mail->SMTPAuth   = true;
-        $mail->Username   = $config['username'];
-        $mail->Password   = $config['password'];
-        $mail->SMTPSecure = $config['encryption'];
-        $mail->Port       = $config['port'];
-
-        // Recipients
-        $mail->setFrom($config['from_email'], $config['from_name']);
-        $mail->addAddress($email);
-
-        // Content
-        $mail->isHTML(true);
-        $mail->Subject = "[School Clubs] $title";
-        $mail->Body    = nl2br($content);
-        $mail->AltBody = strip_tags($content);
-
-        // Priority
-        if ($priority === 'high') {
-            $mail->Priority = 1;
-            $mail->AddCustomHeader('X-Priority: 1');
-            $mail->AddCustomHeader('Importance: High');
-        }
-
-        $mail->send();
-        return true;
-    } catch (Exception $e) {
-        error_log("Mailer Error: " . $mail->ErrorInfo);
-        return false;
-    }
-}
 // =================================================================
 // ADMIN DASHBOARD FUNCTIONALITY
 // =================================================================
 $message = "";
 $message_type = "";
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Create new club
+    // Handle announcement creation
+    if (isset($_POST['action']) && $_POST['action'] == 'create_announcement') {
+        $title = trim($_POST['title']);
+        $content = trim($_POST['content']);
+        $club_id = !empty($_POST['club_id']) ? intval($_POST['club_id']) : null;
+        $target_audience = $_POST['target_audience'] ?? 'all';
+        $priority = $_POST['priority'] ?? 'normal';
+        $is_immediate = isset($_POST['immediate_send']);
+        $send_email = isset($_POST['send_email']);
+        $admin_id = $_SESSION['user_id'];
+        
+        // Validation
+        if (empty($title)) {
+            $message = "Announcement title is required.";
+            $message_type = "error";
+        } elseif (empty($content)) {
+            $message = "Announcement content is required.";
+            $message_type = "error";
+        } else {
+            try {
+                // Create notification and announcement
+                $result = createNotificationForAnnouncement($mysqli, $title, $content, $club_id, $admin_id, $target_audience, $priority);
+                
+                if ($is_immediate) {
+                    // Mark as immediate if requested
+                    $update_query = "UPDATE notifications SET is_immediate = 1, sent_at = NOW() WHERE id = ?";
+                    $update_stmt = $mysqli->prepare($update_query);
+                    $update_stmt->bind_param("i", $result['notification_id']);
+                    $update_stmt->execute();
+                }
+                
+                $message = "Announcement posted successfully and notifications sent to " . $result['affected_users']['count'] . " users!";
+                $message_type = "success";
+                
+                // Send email notifications if requested
+                if ($send_email && isset($result['affected_users']['users'])) {
+                    $email_count = 0;
+                    foreach ($result['affected_users']['users'] as $user) {
+                        if (!empty($user['email'])) {
+                            if (sendEmailNotification($user['email'], $title, $content, $priority)) {
+                                $email_count++;
+                            }
+                        }
+                    }
+                    $message .= " Email notifications sent to {$email_count} users.";
+                }
+                
+            } catch (Exception $e) {
+                $message = "Error posting announcement: " . $e->getMessage();
+                $message_type = "error";
+                error_log("Announcement creation error: " . $e->getMessage());
+            }
+        }
+    }
+}
+
+
+$message = "";
+$message_type = "";
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Create new club - FIXED VERSION
     if (isset($_POST['create_club'])) {
         $name = trim($_POST['club_name']);
         $initials = trim($_POST['club_initials']);
         $description = trim($_POST['club_description']);
         $admin_id = intval($_POST['club_admin']);
+        $created_by = $_SESSION['user_id'];
 
         // Validation
         if (empty($name) || empty($initials) || $admin_id <= 0) {
@@ -315,20 +324,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 // Create club
-               // After validating form data
-$patron_id = $_SESSION['user_id'];
+                $stmt = $mysqli->prepare("INSERT INTO clubs (name, initials, description, created_by) VALUES (?, ?, ?, ?)");
+                if (!$stmt) {
+                    throw new Exception("Failed to prepare club statement: " . $mysqli->error);
+                }
+                $stmt->bind_param("sssi", $name, $initials, $description, $created_by);
+                if (!$stmt->execute()) {
+                    throw new Exception("Failed to create club: " . $stmt->error);
+                }
+                $club_id = $mysqli->insert_id;
 
-$stmt = $conn->prepare("INSERT INTO clubs (name, initials, description, patron_id) VALUES (?, ?, ?, ?)");
-$stmt->bind_param("sssi", $name, $initials, $description, $patron_id);
-$stmt->execute();
-
-// Update user role to club_patron
-$update_role = $conn->prepare("UPDATE users SET role = 'club_manager' WHERE id = ?");
-$update_role->bind_param("i", $patron_id);
-$update_role->execute();
-
-// Update session role
-$_SESSION['role'] = 'club_manager';
                 // Create club manager record
                 $manager_stmt = $mysqli->prepare("INSERT INTO club_managers (user_id, club_id) VALUES (?, ?)");
                 if (!$manager_stmt) {
@@ -339,18 +344,25 @@ $_SESSION['role'] = 'club_manager';
                     throw new Exception("Manager execute failed: " . $manager_stmt->error);
                 }
 
-                // Update user role to club_manager if not already
+                // Update user role to club_manager if not already admin
                 $role_stmt = $mysqli->prepare("UPDATE users SET role = 'club_manager' WHERE id = ? AND role != 'admin'");
                 $role_stmt->bind_param("i", $admin_id);
-                $role_stmt->execute();
+                if (!$role_stmt->execute()) {
+                    throw new Exception("Role update failed: " . $role_stmt->error);
+                }
 
                 $mysqli->commit();
                 $message = "Club created successfully!";
                 $message_type = "success";
+                
+                // Refresh the page to show the new club
+                header("Location: admin_dashboard.php");
+                exit();
             } catch (Exception $e) {
                 $mysqli->rollback();
                 $message = "Error: " . $e->getMessage();
                 $message_type = "error";
+                error_log("Club creation error: " . $e->getMessage());
             }
         }
     }
@@ -483,9 +495,10 @@ if ($clubs_result === false) {
 $admins_result = $mysqli->query("
     SELECT u.id, u.username 
     FROM users u 
-    LEFT JOIN club_managers cm ON u.id = cm.user_id
-    WHERE u.role IN ('student', 'club_manager') 
-    AND cm.user_id IS NULL
+    WHERE u.role IN ('student', 'club_manager')
+    AND NOT EXISTS (
+        SELECT 1 FROM club_managers cm WHERE cm.user_id = u.id
+    )
     ORDER BY u.username
 ");
 if ($admins_result === false) {
@@ -526,658 +539,659 @@ $stats = [
 // Reset the admins result pointer for the form
 $admins_result->data_seek(0);
 ?>
+
 <!DOCTYPE html>
 <html>
 <head>
     <title>System Admin Dashboard</title>
-     <style>
-        ** {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, rgb(169, 153, 136) 0%, rgb(237, 222, 203) 100%);
-    min-height: 100vh;
-    line-height: 1.6;
-}
-
-.navbar {
-    background: linear-gradient(135deg, rgb(150, 85, 10) 0%, rgb(209, 120, 25) 100%);
-    color: white;
-    padding: 20px 30px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.navbar-brand {
-    font-size: 28px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: linear-gradient(45deg, rgb(237, 222, 203), rgb(169, 153, 136));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.nav-links {
-    display: flex;
-    align-items: center;
-    gap: 25px;
-}
-
-.nav-btn {
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
-    padding: 12px 20px;
-    border-radius: 25px;
-    text-decoration: none;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    font-weight: 500;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.nav-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-}
-
-.user-welcome {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 600;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 10px 16px;
-    border-radius: 20px;
-    backdrop-filter: blur(10px);
-}
-
-.container {
-    max-width: 1400px;
-    margin: 40px auto;
-    padding: 0 20px;
-}
-
-.alert {
-    padding: 18px 24px;
-    border-radius: 16px;
-    margin-bottom: 30px;
-    font-weight: 600;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    border: 1px solid;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    backdrop-filter: blur(10px);
-    animation: slideIn 0.5s ease-out;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.alert.success {
-    background: linear-gradient(135deg, rgba(209, 120, 25, 0.9), rgba(150, 85, 10, 0.9));
-    color: white;
-    border-color: rgba(209, 120, 25, 0.3);
-}
-
-.alert.error {
-    background: linear-gradient(135deg, rgba(150, 85, 10, 0.9), rgba(123, 71, 14, 0.9));
-    color: white;
-    border-color: rgba(150, 85, 10, 0.3);
-}
-
-.alert.warning {
-    background: linear-gradient(135deg, rgba(240, 129, 12, 0.9), rgba(209, 120, 25, 0.9));
-    color: white;
-    border-color: rgba(240, 129, 12, 0.3);
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 25px;
-    margin-bottom: 40px;
-}
-
-.stat-card {
-    background: rgba(237, 222, 203, 0.95);
-    border-radius: 20px;
-    padding: 30px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-    position: relative;
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(209, 120, 25, 0.2);
-    overflow: hidden;
-}
-
-.stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, rgb(209, 120, 25), rgb(150, 85, 10));
-    transform: scaleX(0);
-    transition: transform 0.3s ease;
-}
-
-.stat-card:hover::before {
-    transform: scaleX(1);
-}
-
-.stat-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 20px 60px rgba(209, 120, 25, 0.3);
-}
-
-.stat-card:hover .stat-icon {
-    color: rgb(209, 120, 25);
-    transform: scale(1.1);
-}
-
-.stat-card:hover .stat-number {
-    color: rgb(150, 85, 10);
-}
-
-.stat-icon {
-    font-size: 42px;
-    color: rgb(209, 120, 25);
-    margin-bottom: 20px;
-    transition: all 0.3s ease;
-}
-
-.stat-number {
-    font-size: 36px;
-    font-weight: 700;
-    margin-bottom: 12px;
-    color: rgb(123, 71, 14);
-    transition: color 0.3s ease;
-}
-
-.stat-label {
-    color: rgb(150, 85, 10);
-    font-size: 16px;
-    font-weight: 500;
-}
-
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 30px;
-}
-
-@media (min-width: 1200px) {
-    .dashboard-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-
-.dashboard-section {
-    background: rgba(237, 222, 203, 0.95);
-    border-radius: 24px;
-    padding: 35px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(209, 120, 25, 0.2);
-}
-
-.section-title {
-    color: rgb(123, 71, 14);
-    margin-bottom: 30px;
-    font-size: 28px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.section-title i {
-    color: rgb(209, 120, 25);
-    background: linear-gradient(135deg, rgb(209, 120, 25), rgb(150, 85, 10));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.form-group {
-    margin-bottom: 24px;
-}
-
-label {
-    display: block;
-    margin-bottom: 10px;
-    font-weight: 600;
-    color: rgb(123, 71, 14);
-    font-size: 15px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.form-control, input, select, textarea {
-    width: 100%;
-    padding: 16px 20px;
-    border: 2px solid rgb(169, 153, 136);
-    border-radius: 12px;
-    font-size: 15px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(10px);
-}
-
-.form-control:focus, input:focus, select:focus, textarea:focus {
-    border-color: rgb(209, 120, 25);
-    outline: none;
-    box-shadow: 0 0 0 4px rgba(209, 120, 25, 0.1);
-    background: rgba(255, 255, 255, 0.95);
-}
-
-.btn {
-    display: inline-block;
-    background: linear-gradient(135deg, rgb(209, 120, 25) 0%, rgb(150, 85, 10) 100%);
-    color: white;
-    border: none;
-    padding: 16px 32px;
-    font-size: 16px;
-    font-weight: 600;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    text-align: center;
-    text-decoration: none;
-    position: relative;
-    overflow: hidden;
-}
-
-.btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
-}
-
-.btn:hover::before {
-    left: 100%;
-}
-
-.btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(209, 120, 25, 0.4);
-}
-
-.btn-danger {
-    background: linear-gradient(135deg, rgb(150, 85, 10) 0%, rgb(123, 71, 14) 100%);
-}
-
-.btn-danger:hover {
-    box-shadow: 0 10px 30px rgba(150, 85, 10, 0.4);
-}
-
-.btn-secondary {
-    background: linear-gradient(135deg, rgb(169, 153, 136) 0%, rgb(149, 140, 129) 100%);
-}
-
-.btn-secondary:hover {
-    box-shadow: 0 10px 30px rgba(169, 153, 136, 0.4);
-}
-
-.btn-report {
-    background: linear-gradient(135deg, rgb(209, 120, 25) 0%, rgb(240, 129, 12) 100%);
-}
-
-.btn-report:hover {
-    box-shadow: 0 10px 30px rgba(209, 120, 25, 0.4);
-}
-
-.btn-edit {
-    background: linear-gradient(135deg, rgb(240, 129, 12) 0%, rgb(245, 131, 9) 100%);
-}
-
-.btn-edit:hover {
-    box-shadow: 0 10px 30px rgba(240, 129, 12, 0.4);
-}
-
-.table-responsive {
-    overflow-x: auto;
-    margin-top: 25px;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: rgba(237, 222, 203, 0.95);
-    backdrop-filter: blur(10px);
-}
-
-th {
-    background: linear-gradient(135deg, rgb(237, 222, 203), rgb(169, 153, 136));
-    padding: 20px 24px;
-    text-align: left;
-    font-weight: 700;
-    color: rgb(123, 71, 14);
-    border-bottom: 2px solid rgb(209, 120, 25);
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-td {
-    padding: 20px 24px;
-    border-bottom: 1px solid rgb(209, 120, 25);
-    vertical-align: top;
-}
-
-tr:hover {
-    background: linear-gradient(135deg, rgba(209, 120, 25, 0.05), rgba(150, 85, 10, 0.05));
-}
-
-.club-description {
-    color: rgb(150, 85, 10);
-    font-size: 14px;
-    margin-top: 6px;
-    line-height: 1.5;
-}
-
-.no-admin {
-    color: rgb(123, 71, 14);
-    font-style: italic;
-    font-weight: 500;
-}
-
-.no-data {
-    background: linear-gradient(135deg, rgb(237, 222, 203), rgb(169, 153, 136));
-    border-radius: 16px;
-    padding: 30px;
-    text-align: center;
-    color: rgb(150, 85, 10);
-    font-style: italic;
-    font-size: 16px;
-    border: 2px dashed rgb(209, 120, 25);
-}
-
-.admin-tools {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 20px;
-    margin-bottom: 35px;
-}
-
-.admin-tools .btn {
-    width: 100%;
-    text-align: center;
-    padding: 20px;
-    font-size: 15px;
-}
-
-.announcements-list {
-    margin-bottom: 35px;
-}
-
-.announcement {
-    background: linear-gradient(135deg, rgba(209, 120, 25, 0.1), rgba(150, 85, 10, 0.1));
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 20px;
-    border-left: 4px solid rgb(209, 120, 25);
-    backdrop-filter: blur(10px);
-    transition: transform 0.2s ease;
-}
-
-.announcement:hover {
-    transform: translateX(5px);
-}
-
-.announcement-content {
-    margin-bottom: 15px;
-    line-height: 1.6;
-    color: rgb(123, 71, 14);
-}
-
-.announcement-meta {
-    font-size: 14px;
-    color: rgb(150, 85, 10);
-    display: flex;
-    gap: 20px;
-    font-weight: 500;
-}
-
-/* ENHANCED NOTIFICATION STYLES */
-.announcement-form-enhanced {
-    background: rgba(237, 222, 203, 0.95);
-    border-radius: 20px;
-    padding: 35px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-    margin-top: 35px;
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(209, 120, 25, 0.2);
-}
-
-.template-selector {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
-}
-
-.template-card {
-    border: 2px solid rgb(169, 153, 136);
-    border-radius: 16px;
-    padding: 20px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(10px);
-}
-
-.template-card:hover {
-    border-color: rgb(209, 120, 25);
-    transform: translateY(-4px);
-    box-shadow: 0 10px 30px rgba(209, 120, 25, 0.2);
-    background: rgba(255, 255, 255, 0.95);
-}
-
-.template-card h4 {
-    color: rgb(209, 120, 25);
-    margin-bottom: 12px;
-    font-size: 18px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.template-card p {
-    font-size: 14px;
-    color: rgb(150, 85, 10);
-    line-height: 1.5;
-}
-
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 25px;
-    margin-bottom: 25px;
-}
-
-@media (min-width: 768px) {
-    .form-row {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-
-.form-options {
-    display: flex;
-    gap: 25px;
-    flex-wrap: wrap;
-    margin: 30px 0;
-}
-
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 16px 20px;
-    background: linear-gradient(135deg, rgba(209, 120, 25, 0.1), rgba(150, 85, 10, 0.1));
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-    backdrop-filter: blur(10px);
-}
-
-.checkbox-label:hover {
-    background: linear-gradient(135deg, rgba(209, 120, 25, 0.15), rgba(150, 85, 10, 0.15));
-    border-color: rgb(209, 120, 25);
-    transform: translateY(-2px);
-}
-
-.checkbox-label input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    accent-color: rgb(209, 120, 25);
-}
-
-.character-count {
-    display: block;
-    margin-top: 8px;
-    font-size: 12px;
-    color: rgb(150, 85, 10);
-    text-align: right;
-    font-weight: 500;
-}
-
-.actions {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.action-btn {
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 13px;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-weight: 500;
-}
-
-.view-btn {
-    background: linear-gradient(135deg, rgba(237, 222, 203, 0.8), rgba(169, 153, 136, 0.8));
-    color: rgb(123, 71, 14);
-}
-
-.view-btn:hover {
-    background: linear-gradient(135deg, rgba(169, 153, 136, 0.8), rgba(149, 140, 129, 0.8));
-    transform: translateY(-1px);
-}
-
-.delete-btn {
-    background: linear-gradient(135deg, rgba(150, 85, 10, 0.2), rgba(123, 71, 14, 0.2));
-    color: rgb(123, 71, 14);
-}
-
-.delete-btn:hover {
-    background: linear-gradient(135deg, rgba(150, 85, 10, 0.4), rgba(123, 71, 14, 0.4));
-    transform: translateY(-1px);
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .navbar {
-        flex-direction: column;
-        gap: 15px;
-        padding: 15px;
-    }
-
-    .nav-links {
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .dashboard-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .form-row {
-        grid-template-columns: 1fr;
-    }
-
-    .form-options {
-        flex-direction: column;
-    }
-
-    .admin-tools {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* Animation for page load */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.dashboard-section {
-    animation: fadeInUp 0.6s ease-out;
-}
-
-.stat-card {
-    animation: fadeInUp 0.4s ease-out;
-}
-
-.stat-card:nth-child(2) {
-    animation-delay: 0.1s;
-}
-
-.stat-card:nth-child(3) {
-    animation-delay: 0.2s;
-}
-
-.stat-card:nth-child(4) {
-    animation-delay: 0.3s;
-}
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, rgb(169, 153, 136) 0%, rgb(237, 222, 203) 100%);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, rgb(150, 85, 10) 0%, rgb(209, 120, 25) 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .navbar-brand {
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(45deg, rgb(237, 222, 203), rgb(169, 153, 136));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .user-welcome {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .alert {
+            padding: 18px 24px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            font-weight: 600;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            backdrop-filter: blur(10px);
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert.success {
+            background: linear-gradient(135deg, rgba(209, 120, 25, 0.9), rgba(150, 85, 10, 0.9));
+            color: white;
+            border-color: rgba(209, 120, 25, 0.3);
+        }
+
+        .alert.error {
+            background: linear-gradient(135deg, rgba(150, 85, 10, 0.9), rgba(123, 71, 14, 0.9));
+            color: white;
+            border-color: rgba(150, 85, 10, 0.3);
+        }
+
+        .alert.warning {
+            background: linear-gradient(135deg, rgba(240, 129, 12, 0.9), rgba(209, 120, 25, 0.9));
+            color: white;
+            border-color: rgba(240, 129, 12, 0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: rgba(237, 222, 203, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(209, 120, 25, 0.2);
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, rgb(209, 120, 25), rgb(150, 85, 10));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 60px rgba(209, 120, 25, 0.3);
+        }
+
+        .stat-card:hover .stat-icon {
+            color: rgb(209, 120, 25);
+            transform: scale(1.1);
+        }
+
+        .stat-card:hover .stat-number {
+            color: rgb(150, 85, 10);
+        }
+
+        .stat-icon {
+            font-size: 42px;
+            color: rgb(209, 120, 25);
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: rgb(123, 71, 14);
+            transition: color 0.3s ease;
+        }
+
+        .stat-label {
+            color: rgb(150, 85, 10);
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+
+        @media (min-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .dashboard-section {
+            background: rgba(237, 222, 203, 0.95);
+            border-radius: 24px;
+            padding: 35px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(209, 120, 25, 0.2);
+        }
+
+        .section-title {
+            color: rgb(123, 71, 14);
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .section-title i {
+            color: rgb(209, 120, 25);
+            background: linear-gradient(135deg, rgb(209, 120, 25), rgb(150, 85, 10));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: rgb(123, 71, 14);
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-control, input, select, textarea {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid rgb(169, 153, 136);
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .form-control:focus, input:focus, select:focus, textarea:focus {
+            border-color: rgb(209, 120, 25);
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(209, 120, 25, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, rgb(209, 120, 25) 0%, rgb(150, 85, 10) 100%);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(209, 120, 25, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, rgb(150, 85, 10) 0%, rgb(123, 71, 14) 100%);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 10px 30px rgba(150, 85, 10, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, rgb(169, 153, 136) 0%, rgb(149, 140, 129) 100%);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 10px 30px rgba(169, 153, 136, 0.4);
+        }
+
+        .btn-report {
+            background: linear-gradient(135deg, rgb(209, 120, 25) 0%, rgb(240, 129, 12) 100%);
+        }
+
+        .btn-report:hover {
+            box-shadow: 0 10px 30px rgba(209, 120, 25, 0.4);
+        }
+
+        .btn-edit {
+            background: linear-gradient(135deg, rgb(240, 129, 12) 0%, rgb(245, 131, 9) 100%);
+        }
+
+        .btn-edit:hover {
+            box-shadow: 0 10px 30px rgba(240, 129, 12, 0.4);
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(237, 222, 203, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        th {
+            background: linear-gradient(135deg, rgb(237, 222, 203), rgb(169, 153, 136));
+            padding: 20px 24px;
+            text-align: left;
+            font-weight: 700;
+            color: rgb(123, 71, 14);
+            border-bottom: 2px solid rgb(209, 120, 25);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 20px 24px;
+            border-bottom: 1px solid rgb(209, 120, 25);
+            vertical-align: top;
+        }
+
+        tr:hover {
+            background: linear-gradient(135deg, rgba(209, 120, 25, 0.05), rgba(150, 85, 10, 0.05));
+        }
+
+        .club-description {
+            color: rgb(150, 85, 10);
+            font-size: 14px;
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+
+        .no-admin {
+            color: rgb(123, 71, 14);
+            font-style: italic;
+            font-weight: 500;
+        }
+
+        .no-data {
+            background: linear-gradient(135deg, rgb(237, 222, 203), rgb(169, 153, 136));
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            color: rgb(150, 85, 10);
+            font-style: italic;
+            font-size: 16px;
+            border: 2px dashed rgb(209, 120, 25);
+        }
+
+        .admin-tools {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 35px;
+        }
+
+        .admin-tools .btn {
+            width: 100%;
+            text-align: center;
+            padding: 20px;
+            font-size: 15px;
+        }
+
+        .announcements-list {
+            margin-bottom: 35px;
+        }
+
+        .announcement {
+            background: linear-gradient(135deg, rgba(209, 120, 25, 0.1), rgba(150, 85, 10, 0.1));
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid rgb(209, 120, 25);
+            backdrop-filter: blur(10px);
+            transition: transform 0.2s ease;
+        }
+
+        .announcement:hover {
+            transform: translateX(5px);
+        }
+
+        .announcement-content {
+            margin-bottom: 15px;
+            line-height: 1.6;
+            color: rgb(123, 71, 14);
+        }
+
+        .announcement-meta {
+            font-size: 14px;
+            color: rgb(150, 85, 10);
+            display: flex;
+            gap: 20px;
+            font-weight: 500;
+        }
+
+        /* ENHANCED NOTIFICATION STYLES */
+        .announcement-form-enhanced {
+            background: rgba(237, 222, 203, 0.95);
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-top: 35px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(209, 120, 25, 0.2);
+        }
+
+        .template-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .template-card {
+            border: 2px solid rgb(169, 153, 136);
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .template-card:hover {
+            border-color: rgb(209, 120, 25);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(209, 120, 25, 0.2);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .template-card h4 {
+            color: rgb(209, 120, 25);
+            margin-bottom: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .template-card p {
+            font-size: 14px;
+            color: rgb(150, 85, 10);
+            line-height: 1.5;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        @media (min-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .form-options {
+            display: flex;
+            gap: 25px;
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, rgba(209, 120, 25, 0.1), rgba(150, 85, 10, 0.1));
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            backdrop-filter: blur(10px);
+        }
+
+        .checkbox-label:hover {
+            background: linear-gradient(135deg, rgba(209, 120, 25, 0.15), rgba(150, 85, 10, 0.15));
+            border-color: rgb(209, 120, 25);
+            transform: translateY(-2px);
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: rgb(209, 120, 25);
+        }
+
+        .character-count {
+            display: block;
+            margin-top: 8px;
+            font-size: 12px;
+            color: rgb(150, 85, 10);
+            text-align: right;
+            font-weight: 500;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .view-btn {
+            background: linear-gradient(135deg, rgba(237, 222, 203, 0.8), rgba(169, 153, 136, 0.8));
+            color: rgb(123, 71, 14);
+        }
+
+        .view-btn:hover {
+            background: linear-gradient(135deg, rgba(169, 153, 136, 0.8), rgba(149, 140, 129, 0.8));
+            transform: translateY(-1px);
+        }
+
+        .delete-btn {
+            background: linear-gradient(135deg, rgba(150, 85, 10, 0.2), rgba(123, 71, 14, 0.2));
+            color: rgb(123, 71, 14);
+        }
+
+        .delete-btn:hover {
+            background: linear-gradient(135deg, rgba(150, 85, 10, 0.4), rgba(123, 71, 14, 0.4));
+            transform: translateY(-1px);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .form-options {
+                flex-direction: column;
+            }
+
+            .admin-tools {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animation for page load */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dashboard-section {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .stat-card {
+            animation: fadeInUp 0.4s ease-out;
+        }
+
+        .stat-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .stat-card:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .stat-card:nth-child(4) {
+            animation-delay: 0.3s;
+        }
     </style>
 </head>
 <body>

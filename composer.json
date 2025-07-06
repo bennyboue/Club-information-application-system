@@ -1,14 +1,5 @@
 {
-    "name": "school/club-system",
-    "description": "School Club Management System",
-    "type": "project",
     "require": {
-        "phpmailer/phpmailer": "^6.8"
-    },
-    "license": "MIT",
-    "autoload": {
-        "psr-4": {
-            "App\\": "src/"
-        }
+        "phpmailer/phpmailer": "^6.10"
     }
 }
