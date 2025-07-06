@@ -45,6 +45,19 @@ if (isset($_POST['club_id'])) {
     $club_id = $clubs[0]['id'];
 }
 
+// Find the current club info for display
+$current_club = null;
+foreach ($clubs as $club) {
+    if ($club['id'] == $club_id) {
+        $current_club = $club;
+        break;
+    }
+}
+if (!$current_club) {
+    $current_club = $clubs[0];
+    $club_id = $current_club['id'];
+}
+
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Verify the patron manages this club
@@ -66,9 +79,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $add_member->bind_param("ii", $club_id, $student_id);
         $add_member->execute();
         
-        $_SESSION['message'] = "Member added successfully!";
-        header("Location: club_manager_dashboard.php");
-        exit();
+       $_SESSION['message'] = "Member added successfully!";
+header("Location: club_manager_dashboard.php?club_id=$club_id");
+exit();
     } 
     elseif (isset($_POST['remove_member'])) {
         // Remove member from club
@@ -77,9 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $remove_member->bind_param("ii", $club_id, $member_id);
         $remove_member->execute();
         
-        $_SESSION['message'] = "Member removed successfully!";
-        header("Location: club_manager_dashboard.php");
-        exit();
+       $_SESSION['message'] = "Member removed successfully!";
+header("Location: club_manager_dashboard.php?club_id=$club_id");
+exit();
     } 
     elseif (isset($_POST['post_announcement'])) {
         // Post new announcement
@@ -126,9 +139,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $add_member->bind_param("ii", $club_id, $student_id);
         $add_member->execute();
         
-        $_SESSION['message'] = "Membership request approved!";
-        header("Location: club_manager_dashboard.php");
-        exit();
+       $_SESSION['message'] = "Membership request approved!";
+header("Location: club_manager_dashboard.php?club_id=$club_id");
+exit();
     }
     elseif (isset($_POST['reject_request'])) {
         $request_id = $_POST['request_id'];
@@ -138,9 +151,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $reject_request->bind_param("i", $request_id);
         $reject_request->execute();
         
-        $_SESSION['message'] = "Membership request rejected!";
-        header("Location: club_manager_dashboard.php");
-        exit();
+       $_SESSION['message'] = "Membership request rejected!";
+header("Location: club_manager_dashboard.php?club_id=$club_id");
+exit();
     }
 }
 
@@ -514,9 +527,9 @@ $conn->close();
         </div>
 
         <div class="club-info-card">
-            <div class="club-name"><?php echo htmlspecialchars($clubs[0]['name']); ?></div>
-            <div class="club-description"><?php echo htmlspecialchars($clubs[0]['description']); ?></div>
-        </div>
+    <div class="club-name"><?php echo htmlspecialchars($current_club['name']); ?></div>
+    <div class="club-description"><?php echo htmlspecialchars($current_club['description']); ?></div>
+</div>
 
         <div class="tabs">
             <div class="tab active" onclick="openTab(event, 'members')">Members</div>

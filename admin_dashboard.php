@@ -1202,123 +1202,34 @@ tr:hover {
             </div>
         <?php endif; ?>
 
-        <!-- Quick Stats -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <a href="user_management.php" class="stat-card clickable">
-                    <div class="stat-icon"><i class="fas fa-users"></i></div>
-                    <div class="stat-number"><?php echo $stats['total_users']; ?></div>
-                    <div class="stat-label">Total Users</div>
-                </a>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-star"></i></div>
-                <div class="stat-number"><?php echo $stats['total_clubs']; ?></div>
-                <div class="stat-label">Active Clubs</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
-                <div class="stat-number"><?php echo $stats['active_events']; ?></div>
-                <div class="stat-label">Upcoming Events</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-clock"></i></div>
-                <div class="stat-number"><?php echo $stats['pending_requests']; ?></div>
-                <div class="stat-label">Pending Requests</div>
-            </div>
-        </div>
+       <!-- Quick Stats -->
+<div class="stats-grid">
+    <a href="user_management.php" class="stat-card" style="display: block; text-decoration: none; color: inherit;">
+        <div class="stat-icon"><i class="fas fa-users"></i></div>
+        <div class="stat-number"><?php echo $stats['total_users']; ?></div>
+        <div class="stat-label">Total Users</div>
+    </a>
+    
+    <a href="club.php" class="stat-card" style="display: block; text-decoration: none; color: inherit;">
+        <div class="stat-icon"><i class="fas fa-star"></i></div>
+        <div class="stat-number"><?php echo $stats['total_clubs']; ?></div>
+        <div class="stat-label">Active Clubs</div>
+    </a>
+    
+    <a href="events.php" class="stat-card" style="display: block; text-decoration: none; color: inherit;">
+        <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
+        <div class="stat-number"><?php echo $stats['active_events']; ?></div>
+        <div class="stat-label">Upcoming Events</div>
+    </a>
+    
+    <a href="patron_requests.php" class="stat-card" style="display: block; text-decoration: none; color: inherit;">
+        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+        <div class="stat-number"><?php echo $stats['pending_requests']; ?></div>
+        <div class="stat-label">Pending Requests</div>
+    </a>
+</div>
 
-        <div class="dashboard-grid">
-            <!-- Clubs Management -->
-            <div class="dashboard-section">
-                <h2 class="section-title"><i class="fas fa-club"></i> Clubs Management</h2>
-                
-                <h3><i class="fas fa-plus-circle"></i> Create New Club</h3>
-                <form method="POST">
-                    <div class="form-group">
-                        <label><i class="fas fa-tag"></i> Club Name</label>
-                        <input type="text" name="club_name" class="form-control" required maxlength="100">
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-hashtag"></i> Club Initials (2-4 letters)</label>
-                        <input type="text" name="club_initials" class="form-control" maxlength="10" required pattern="[A-Za-z]{2,4}" title="Please enter 2-4 letters only">
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-align-left"></i> Description</label>
-                        <textarea name="club_description" class="form-control" rows="3" maxlength="1000"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-user-tie"></i> Assign Manager</label>
-                        <select name="club_admin" class="form-control" required>
-                            <option value="">-- Select a Manager --</option>
-                            <?php if ($admins_result->num_rows > 0): ?>
-                                <?php while($admin = $admins_result->fetch_assoc()): ?>
-                                    <option value="<?php echo $admin['id']; ?>">
-                                        <?php echo htmlspecialchars($admin['username']); ?>
-                                    </option>
-                                <?php endwhile; ?>
-                            <?php else: ?>
-                                <option value="" disabled>No available users - all users are already managing clubs</option>
-                            <?php endif; ?>
-                        </select>
-                    </div>
-                    <button type="submit" name="create_club" class="btn" <?php echo $admins_result->num_rows == 0 ? 'disabled' : ''; ?>>
-                        <i class="fas fa-save"></i> Create Club
-                    </button>
-                </form>
-
-                <h3 style="margin-top: 30px;"><i class="fas fa-list"></i> Existing Clubs</h3>
-                <?php if ($clubs_result->num_rows > 0): ?>
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Code</th>
-                                    <th>Manager</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php while($club = $clubs_result->fetch_assoc()): ?>
-                                    <tr>
-                                        <td>
-                                            <strong><?php echo htmlspecialchars($club['name']); ?></strong>
-                                            <?php if (!empty($club['description'])): ?>
-                                                <div class="club-description"><?php echo htmlspecialchars($club['description']); ?></div>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td><?php echo htmlspecialchars($club['initials']); ?></td>
-                                        <td>
-                                            <?php echo !empty($club['manager_name']) ? htmlspecialchars($club['manager_name']) : '<span class="no-admin">Not assigned</span>'; ?>
-                                        </td>
-                                        <td class="actions">
-                                            <a href="edit_club.php?id=<?php echo $club['id']; ?>" 
-                                               class="btn btn-edit">
-                                                <i class="fas fa-edit"></i> Edit
-                                            </a>
-                                            <form method="POST" style="display:inline;">
-                                                <input type="hidden" name="club_id" value="<?php echo $club['id']; ?>">
-                                                <button type="submit" name="delete_club" class="btn btn-danger"
-                                                        onclick="return confirm('Permanently delete this club and all its data?')">
-                                                    <i class="fas fa-trash-alt"></i> Delete
-                                                </button>
-                                            </form>
-                                            <a href="club_report.php?club_id=<?php echo $club['id']; ?>" 
-                                               class="btn btn-report">
-                                                <i class="fas fa-chart-bar"></i> Report
-                                            </a>
-                                        </td>
-                                    </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php else: ?>
-                    <div class="no-data">No clubs found. Create your first club above.</div>
-                <?php endif; ?>
-            </div>
-
+       
             <!-- System Tools -->
             <div class="dashboard-section">
                 <h2 class="section-title"><i class="fas fa-tools"></i> System Administration</h2>

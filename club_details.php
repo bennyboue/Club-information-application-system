@@ -33,51 +33,74 @@ $members_stmt = $conn->prepare("SELECT u.username, u.role, m.joined_at FROM memb
 $members_stmt->bind_param("i", $club_id);
 $members_stmt->execute();
 $members_result = $members_stmt->get_result();
-
-$members_stmt = $conn->prepare("
-    SELECT u.id, u.username 
-    FROM memberships m
-    JOIN users u ON m.user_id = u.id
-    WHERE m.club_id = ? AND m.status = 'approved'
-");
+// Check if current user is a member
 // Check if current user is a member
 $is_member = false;
+$has_pending_request = false;
 $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0;
+
 if ($user_id > 0) {
+    // Check if user is already a member
     $member_check = $conn->prepare("SELECT id FROM memberships WHERE user_id = ? AND club_id = ?");
     $member_check->bind_param("ii", $user_id, $club_id);
     $member_check->execute();
     $is_member = $member_check->get_result()->num_rows > 0;
-}
-// When student clicks "Join Club"
-if (isset($_POST['join_club'])) {
-    $club_id = intval($_POST['club_id']);
-    $user_id = $_SESSION['user_id'];
     
-    // Check if request already exists
-    $check_stmt = $conn->prepare("SELECT id FROM memberships WHERE user_id = ? AND club_id = ?");
-    $check_stmt->bind_param("ii", $user_id, $club_id);
-    $check_stmt->execute();
-    
-    if ($check_stmt->get_result()->num_rows > 0) {
-        echo "You already have a pending request for this club";
-    } else {
-        // Create membership request
-        $insert_stmt = $conn->prepare("INSERT INTO memberships (user_id, club_id, status) VALUES (?, ?, 'pending')");
-        $insert_stmt->bind_param("ii", $user_id, $club_id);
-        
-        if ($insert_stmt->execute()) {
-            // Send notification to club manager
-            $notification_title = "New Membership Request";
-            $notification_content = "Student {$_SESSION['username']} wants to join your club";
-            createNotification($conn, $notification_title, $notification_content, $club_id, 'club_managers');
-            
-            echo "Request sent to club manager for approval";
-        } else {
-            echo "Error submitting request";
-        }
+    // Check if user has a pending request
+    if (!$is_member) {
+        $request_check = $conn->prepare("SELECT id FROM membership_requests WHERE user_id = ? AND club_id = ? AND status = 'pending'");
+        $request_check->bind_param("ii", $user_id, $club_id);
+        $request_check->execute();
+        $has_pending_request = $request_check->get_result()->num_rows > 0;
     }
 }
+// Check if current user is the club patron
+$is_club_patron = false;
+if ($user_id > 0) {
+    $patron_check = $conn->prepare("SELECT id FROM club_managers WHERE user_id = ? AND club_id = ? AND is_patron = 1");
+    $patron_check->bind_param("ii", $user_id, $club_id);
+    $patron_check->execute();
+    $is_club_patron = $patron_check->get_result()->num_rows > 0;
+}
+// When student clicks "Join Club"
+// Handle join club request
+if (isset($_POST['join_club']) && isset($_SESSION['user_id'])) {
+    $user_id = $_SESSION['user_id'];
+    
+    // Check if user already has a pending or approved request
+    $check_request = $conn->prepare("SELECT id, status FROM membership_requests WHERE user_id = ? AND club_id = ?");
+    $check_request->bind_param("ii", $user_id, $club_id);
+    $check_request->execute();
+    $request_result = $check_request->get_result();
+    
+    if ($request_result->num_rows > 0) {
+        $existing_request = $request_result->fetch_assoc();
+        if ($existing_request['status'] === 'pending') {
+            $_SESSION['message'] = "You already have a pending request for this club.";
+            $_SESSION['message_type'] = "info";
+        } else {
+            $_SESSION['message'] = "You already have a request for this club.";
+            $_SESSION['message_type'] = "info";
+        }
+    } else {
+        // Create new membership request
+        $insert_request = $conn->prepare("INSERT INTO membership_requests (user_id, club_id, status, created_at) VALUES (?, ?, 'pending', NOW())");
+        $insert_request->bind_param("ii", $user_id, $club_id);
+        
+        if ($insert_request->execute()) {
+            $_SESSION['message'] = "Your membership request has been sent to the club patron for approval.";
+            $_SESSION['message_type'] = "success";
+        } else {
+            $_SESSION['message'] = "Error submitting request. Please try again.";
+            $_SESSION['message_type'] = "error";
+        }
+    }
+    
+    // Redirect to prevent form resubmission
+    header("Location: club_details.php?id=$club_id");
+    exit();
+}
+
 
 $conn->close();
 ?>
@@ -361,21 +384,25 @@ $conn->close();
             </div>
 
             <?php if (isset($_SESSION['user_id'])): ?>
-                <div class="action-buttons">
-                    <?php if ($is_member): ?>
-                        <span class="btn btn-success">✓ You are a member</span>
-                        <a href="leave_club.php?id=<?php echo $club_id; ?>" class="btn btn-secondary" 
-                           onclick="return confirm('Are you sure you want to leave this club?')">Leave Club</a>
-                    <?php else: ?>
-                        <a href="join_club.php?id=<?php echo $club_id; ?>" class="btn btn-primary">Join Club</a>
-                    <?php endif; ?>
-                </div>
-            <?php else: ?>
-                <div class="action-buttons">
-                    <a href="login.php" class="btn btn-primary">Login to Join Club</a>
-                </div>
-            <?php endif; ?>
-        </div>
+    <div class="action-buttons">
+        <?php if ($is_member): ?>
+            <span class="btn btn-success">✓ You are a member</span>
+            <a href="leave_club.php?id=<?php echo $club_id; ?>" class="btn btn-secondary" 
+               onclick="return confirm('Are you sure you want to leave this club?')">Leave Club</a>
+        <?php elseif ($has_pending_request): ?>
+            <span class="btn btn-secondary">Request Pending</span>
+        <?php else: ?>
+            <form method="POST" style="display: inline;">
+                <input type="hidden" name="club_id" value="<?php echo $club_id; ?>">
+                <button type="submit" name="join_club" class="btn btn-primary">Join Club</button>
+            </form>
+        <?php endif; ?>
+    </div>
+<?php else: ?>
+    <div class="action-buttons">
+        <a href="login.php" class="btn btn-primary">Login to Join Club</a>
+    </div>
+<?php endif; ?>
 
         <div class="section">
             <h2 class="section-title">Upcoming Events</h2>
@@ -394,22 +421,24 @@ $conn->close();
             <?php endif; ?>
         </div>
 
-        <div class="section">
-            <h2 class="section-title">Club Members (<?php echo $members_result->num_rows; ?>)</h2>
-            <?php if ($members_result->num_rows > 0): ?>
-                <?php while($member = $members_result->fetch_assoc()): ?>
-                    <div class="member-item">
-                        <span class="member-name"><?php echo htmlspecialchars($member['username']); ?></span>
-                        <span class="member-role"><?php echo htmlspecialchars($member['role']); ?></span>
-                        <span style="color: #666; font-size: 12px; margin-left: 10px;">
-                            Joined: <?php echo date('M j, Y', strtotime($member['joined_at'])); ?>
-                        </span>
-                    </div>
-                <?php endwhile; ?>
-            <?php else: ?>
-                <div class="no-content">No members yet</div>
-            <?php endif; ?>
-        </div>
+       <?php if ($is_club_patron): ?>
+    <div class="section">
+        <h2 class="section-title">Club Members (<?php echo $members_result->num_rows; ?>)</h2>
+        <?php if ($members_result->num_rows > 0): ?>
+            <?php while($member = $members_result->fetch_assoc()): ?>
+                <div class="member-item">
+                    <span class="member-name"><?php echo htmlspecialchars($member['username']); ?></span>
+                    <span class="member-role"><?php echo htmlspecialchars($member['role']); ?></span>
+                    <span style="color: #666; font-size: 12px; margin-left: 10px;">
+                        Joined: <?php echo date('M j, Y', strtotime($member['joined_at'])); ?>
+                    </span>
+                </div>
+            <?php endwhile; ?>
+        <?php else: ?>
+            <div class="no-content">No members yet</div>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
     </div>
 </body>
 <?php

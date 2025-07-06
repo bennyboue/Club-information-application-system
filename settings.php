@@ -337,7 +337,7 @@ $conn->close();
                 
                 <div class="form-group">
                     <label for="max_clubs"><i class="fas fa-user-graduate"></i> Max Clubs per Student</label>
-                    <input type="number" id="max_clubs" name="max_clubs" class="form-control" min="1" max="5" 
+                    <input type="number" id="max_clubs" name="max_clubs" class="form-control" min="1" max="25" 
                            value="<?php echo htmlspecialchars($settings['max_clubs_per_student']); ?>">
                     <small style="display: block; margin-top: 0.5rem; color: #718096;">Maximum number of clubs a student can join</small>
                 </div>

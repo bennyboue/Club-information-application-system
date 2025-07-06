@@ -1015,7 +1015,14 @@ $conn->close();
             </div>
         </div>
     </div>
-
+<!-- UPCOMING EVENTS SECTION -->
+        
+    <div class="call-to-action">
+        <h3>Ready to Join the Fun?</h3>
+        <p>Don't let these amazing opportunities pass you by! Check out all upcoming events and mark your calendar.</p>
+        <button class="cta-button" onclick="goToEvents()">View All Upcoming Events →</button>
+    </div>
+</div>
     <!-- MEMORABLE MOMENTS SECTION -->
     <div class="memories-section">
         <h2 class="encouragement-header">💭 Memorable Moments & Student Testimonials 💭</h2>
@@ -1199,6 +1206,10 @@ $conn->close();
                 behavior: 'smooth'
             });
         }
+        // Add this function to your existing JavaScript section
+function goToEvents() {
+    window.location.href = 'events.php';
+}
 
         // Close dropdown when clicking overlay
         document.getElementById('dropdownOverlay').addEventListener('click', function() {

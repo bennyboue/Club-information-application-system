@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 02, 2025 at 02:32 PM
+-- Generation Time: Jul 06, 2025 at 03:02 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -68,7 +68,12 @@ INSERT INTO `announcements` (`id`, `title`, `content`, `club_id`, `created_by`, 
 (9, 'New Event Announcement', 'We are excited to announce our upcoming event: [EVENT_NAME] on [DATE]. Join us for [BRIEF_DESCRIPTION]. More details to follow.', NULL, 48, 'general', 'medium', 'draft', 1, NULL, NULL, '2025-07-01 23:08:07', '2025-07-01 23:08:07', 3),
 (10, 'Meeting Reminder', 'This is a reminder about our upcoming meeting on [DATE] at [TIME] in [LOCATION]. Please come prepared with any materials mentioned in previous communications.', NULL, 48, 'general', 'medium', 'draft', 1, NULL, NULL, '2025-07-01 23:47:33', '2025-07-01 23:47:33', 4),
 (11, 'Meeting Reminder', 'This is a reminder about our upcoming meeting on [DATE] at [TIME] in [LOCATION]. Please come prepared with any materials mentioned in previous communications.', NULL, 48, 'general', 'medium', 'draft', 1, NULL, NULL, '2025-07-01 23:49:54', '2025-07-01 23:49:54', 5),
-(12, 'Meeting Reminder', 'This is a reminder about our upcoming meeting on [DATE] at [TIME] in [LOCATION]. Please come prepared with any materials mentioned in previous communications.', NULL, 48, 'general', 'medium', 'draft', 1, NULL, NULL, '2025-07-01 23:51:35', '2025-07-01 23:51:35', 6);
+(12, 'Meeting Reminder', 'This is a reminder about our upcoming meeting on [DATE] at [TIME] in [LOCATION]. Please come prepared with any materials mentioned in previous communications.', NULL, 48, 'general', 'medium', 'draft', 1, NULL, NULL, '2025-07-01 23:51:35', '2025-07-01 23:51:35', 6),
+(13, 'Urgent Notice', 'URGENT: [DESCRIBE_URGENT_MATTER]. Please take immediate action or note the following important information: [Ray]', NULL, 48, 'general', 'medium', 'draft', 1, NULL, NULL, '2025-07-02 13:40:14', '2025-07-02 13:40:14', 7),
+(14, 'Ray', 'rkl coming', 13, 54, 'general', 'medium', 'draft', 1, NULL, NULL, '2025-07-02 13:42:19', '2025-07-02 13:42:19', NULL),
+(16, 'HAPPY BDAY HM', 'Haapppyybdaay Hope!!!', 1, 48, 'general', 'medium', 'draft', 1, NULL, NULL, '2025-07-03 13:13:04', '2025-07-03 13:13:04', 9),
+(17, 'See', 'See', 15, 47, 'general', 'medium', 'draft', 1, NULL, NULL, '2025-07-03 13:49:04', '2025-07-03 13:49:04', NULL),
+(18, 'Urgent Notice', 'URGENT: [DESCRIBE_URGENT_MATTER]. Please take immediate action or note the following important information: [DETAILS]', NULL, 48, 'general', 'medium', 'draft', 1, NULL, NULL, '2025-07-04 06:59:46', '2025-07-04 06:59:46', 10);
 
 -- --------------------------------------------------------
 
@@ -130,7 +135,9 @@ CREATE TABLE `club_managers` (
 --
 
 INSERT INTO `club_managers` (`id`, `user_id`, `club_id`, `assigned_date`, `status`, `is_patron`, `created_at`, `updated_at`) VALUES
-(2, 47, 15, '2025-07-02 03:05:06', 'active', 1, '2025-07-02 00:05:06', '2025-07-02 00:05:06');
+(2, 47, 15, '2025-07-02 03:05:06', 'active', 1, '2025-07-02 00:05:06', '2025-07-02 00:05:06'),
+(3, 54, 13, '2025-07-02 16:38:38', 'active', 1, '2025-07-02 13:38:38', '2025-07-02 13:38:38'),
+(4, 57, 2, '2025-07-04 09:51:53', 'active', 1, '2025-07-04 06:51:53', '2025-07-04 06:51:53');
 
 -- --------------------------------------------------------
 
@@ -146,6 +153,14 @@ CREATE TABLE `events` (
   `event_date` date DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `events`
+--
+
+INSERT INTO `events` (`id`, `club_id`, `title`, `description`, `event_date`, `created_at`) VALUES
+(12, 13, 'Ray', 'Rkl coming', '2025-12-09', '2025-07-02 14:10:44'),
+(13, 15, 'Stacey', 'Mwiberiiii!!!', '2025-07-15', '2025-07-06 11:59:04');
 
 -- --------------------------------------------------------
 
@@ -182,7 +197,11 @@ INSERT INTO `memberships` (`id`, `user_id`, `club_id`, `status`, `joined_at`) VA
 (13, 43, 4, 'approved', '2025-06-20 06:29:24'),
 (14, 49, 7, 'approved', '2025-06-24 11:06:29'),
 (15, 51, 4, 'approved', '2025-06-30 22:45:53'),
-(16, 51, 15, 'pending', '2025-07-02 00:28:25');
+(16, 51, 15, 'pending', '2025-07-02 00:28:25'),
+(17, 56, 1, 'pending', '2025-07-03 13:04:02'),
+(18, 51, 2, 'pending', '2025-07-04 07:02:18'),
+(19, 58, 7, 'pending', '2025-07-05 14:17:48'),
+(24, 58, 15, 'pending', '2025-07-06 13:00:46');
 
 -- --------------------------------------------------------
 
@@ -197,6 +216,13 @@ CREATE TABLE `membership_requests` (
   `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `membership_requests`
+--
+
+INSERT INTO `membership_requests` (`id`, `club_id`, `user_id`, `status`, `created_at`) VALUES
+(1, 15, 58, 'approved', '2025-07-06 12:59:26');
 
 -- --------------------------------------------------------
 
@@ -230,7 +256,10 @@ INSERT INTO `notifications` (`id`, `title`, `message`, `type`, `priority`, `targ
 (3, 'New Event Announcement', 'We are excited to announce our upcoming event: [EVENT_NAME] on [DATE]. Join us for [BRIEF_DESCRIPTION]. More details to follow.', 'announcement', 'urgent', 'club_managers', NULL, 48, '2025-07-01 23:08:07', '2025-07-31 23:08:07', 0, NULL, 1),
 (4, 'Meeting Reminder', 'This is a reminder about our upcoming meeting on [DATE] at [TIME] in [LOCATION]. Please come prepared with any materials mentioned in previous communications.', 'announcement', 'normal', 'club_managers', NULL, 48, '2025-07-01 23:47:33', '2025-07-31 23:47:33', 0, NULL, 1),
 (5, 'Meeting Reminder', 'This is a reminder about our upcoming meeting on [DATE] at [TIME] in [LOCATION]. Please come prepared with any materials mentioned in previous communications.', 'announcement', 'normal', 'club_managers', NULL, 48, '2025-07-01 23:49:54', '2025-07-31 23:49:54', 0, NULL, 1),
-(6, 'Meeting Reminder', 'This is a reminder about our upcoming meeting on [DATE] at [TIME] in [LOCATION]. Please come prepared with any materials mentioned in previous communications.', 'announcement', 'normal', 'club_managers', NULL, 48, '2025-07-01 23:51:35', '2025-07-31 23:51:35', 0, NULL, 1);
+(6, 'Meeting Reminder', 'This is a reminder about our upcoming meeting on [DATE] at [TIME] in [LOCATION]. Please come prepared with any materials mentioned in previous communications.', 'announcement', 'normal', 'club_managers', NULL, 48, '2025-07-01 23:51:35', '2025-07-31 23:51:35', 0, NULL, 1),
+(7, 'Urgent Notice', 'URGENT: [DESCRIBE_URGENT_MATTER]. Please take immediate action or note the following important information: [Ray]', 'announcement', 'high', 'all', NULL, 48, '2025-07-02 13:40:14', '2025-08-01 13:40:14', 1, '2025-07-02 13:40:14', 1),
+(9, 'HAPPY BDAY HM', 'Haapppyybdaay Hope!!!', 'announcement', 'high', 'students', 1, 48, '2025-07-03 13:13:04', '2025-08-02 13:13:04', 1, '2025-07-03 13:13:04', 1),
+(10, 'Urgent Notice', 'URGENT: [DESCRIBE_URGENT_MATTER]. Please take immediate action or note the following important information: [DETAILS]', 'announcement', 'urgent', 'club_managers', NULL, 48, '2025-07-04 06:59:46', '2025-08-03 06:59:46', 0, NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -257,7 +286,10 @@ INSERT INTO `notification_logs` (`id`, `notification_id`, `admin_id`, `action`, 
 (3, 3, 48, 'created', '{\"count\":3,\"users\":[{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"}]}', '2025-07-01 23:08:07'),
 (4, 4, 48, 'created', '{\"count\":3,\"users\":[{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"}]}', '2025-07-01 23:47:33'),
 (5, 5, 48, 'created', '{\"count\":3,\"users\":[{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"}]}', '2025-07-01 23:49:54'),
-(6, 6, 48, 'created', '{\"count\":3,\"users\":[{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"}]}', '2025-07-01 23:51:35');
+(6, 6, 48, 'created', '{\"count\":3,\"users\":[{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"}]}', '2025-07-01 23:51:35'),
+(7, 7, 48, 'created', '{\"count\":8,\"users\":[{\"id\":43,\"username\":\"Kiki\",\"email\":\"mwiberikian6@gmail.com\"},{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":48,\"username\":\"Bruce\",\"email\":\"bruce@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":50,\"username\":\"Leroy\",\"email\":\"ndiao@gmail.com\"},{\"id\":51,\"username\":\"Kian\",\"email\":\"mwiberikian1@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"},{\"id\":55,\"username\":\"Reed\",\"email\":\"mwiberikian2@gmail.com\"}]}', '2025-07-02 13:40:14'),
+(8, 9, 48, 'created', '{\"count\":4,\"users\":[{\"id\":43,\"username\":\"Kiki\",\"email\":\"mwiberikian6@gmail.com\"},{\"id\":50,\"username\":\"Leroy\",\"email\":\"ndiao@gmail.com\"},{\"id\":51,\"username\":\"Kian\",\"email\":\"mwiberikian1@gmail.com\"},{\"id\":56,\"username\":\"Hope\",\"email\":\"hope@gmail.com\"}]}', '2025-07-03 13:13:04'),
+(9, 10, 48, 'created', '{\"count\":4,\"users\":[{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"},{\"id\":57,\"username\":\"Benjamin\",\"email\":\"benja@gmail.com\"}]}', '2025-07-04 06:59:46');
 
 -- --------------------------------------------------------
 
@@ -329,9 +361,12 @@ INSERT INTO `users` (`id`, `username`, `surname`, `email`, `school_id`, `passwor
 (48, 'Bruce', 'Wayne', 'bruce@gmail.com', '163035', '$2y$10$tGN.0YHc3ETbhkgDKgH5J.ig/4aDjqfuktwo372u9arWqy5UFOG.6', 'admin', '2025-06-24 10:37:16'),
 (49, 'Joshua', 'Adalo', 'Josh@gmail.com', '689848', '$2y$10$dTsLcezzHgwNO/0tZZfnJuq.awpeoD5N..kEDBnEnKxoH9O9uaT36', 'club_manager', '2025-06-24 11:05:57'),
 (50, 'Leroy', 'Ndiao', 'ndiao@gmail.com', '168045', '$2y$10$uNxJWJKg4QPvrqjsFJBs1.N1KoxCiou5DgZikLA/0PpWiGCP6uO9i', 'student', '2025-06-30 17:25:30'),
-(51, 'Kian', 'Muchemi', 'mwiberikian1@gmail.com', '1365', '$2y$10$Ry4D1LRydBL2n7vAoJaUoeUI1oU/Nl90AA0RhsTOQ3wgajLrlKROW', 'student', '2025-06-30 22:44:31'),
+(51, 'Kian', 'Muchemi', 'mwiberikian1@gmail.com', '1365', '$2y$10$N3TsWAM2hfgHKnu7lySy1uSmKz1n9nvhhXD4BR8bG/XCDLjR9DHeq', 'student', '2025-06-30 22:44:31'),
 (54, 'Clark', 'Kent', 'mwiberikian3@gmail.com', '4422', '$2y$10$UuPJdFdusoQto13JoZ1zMudE7AKFUXV6cfstjSckvxfL.mbPZ8T.C', 'club_manager', '2025-06-30 22:54:37'),
-(55, 'Reed', 'Richards', 'mwiberikian2@gmail.com', '1230', '$2y$10$xRpXs8ONNgLYBL68CPud3uRRU/2uFOHF5q3F4wOZUNDqJ/uldXQqu', 'admin', '2025-06-30 23:01:01');
+(55, 'Reed', 'Richards', 'mwiberikian2@gmail.com', '1230', '$2y$10$xRpXs8ONNgLYBL68CPud3uRRU/2uFOHF5q3F4wOZUNDqJ/uldXQqu', 'admin', '2025-06-30 23:01:01'),
+(56, 'Hope', 'Muthoni', 'hope@gmail.com', '1243', '$2y$10$GG0aKDwZqtFEffUPeyGPY.AliUtKu8pdlkBhlSyGkrm08Y8QWNrvm', 'student', '2025-07-03 13:00:25'),
+(57, 'Benjamin', 'Mb', 'benja@gmail.com', '9090', '$2y$10$/BBvcNzXViS6amQG4DKFp.Ji8KTlMOBg1HfzWss.oFwMNW5vvJMSy', 'club_manager', '2025-07-04 06:50:26'),
+(58, 'Stacey', 'Mwiberi', 'Staceyjudy75@gmail.com', '0346', '$2y$10$mESz7rdt1rAOT5srKFX.VO/Vl2X92bi.c1OtBjE0DusBeto0aC2DG', 'student', '2025-07-05 14:12:38');
 
 -- --------------------------------------------------------
 
@@ -364,7 +399,7 @@ INSERT INTO `user_notifications` (`id`, `user_id`, `notification_id`, `read_at`,
 (8, 55, 1, NULL, '2025-07-01 15:36:35', 'unread', 0),
 (9, 43, 2, NULL, '2025-07-01 23:07:09', 'unread', 0),
 (10, 50, 2, NULL, '2025-07-01 23:07:09', 'unread', 0),
-(11, 51, 2, '2025-07-02 00:28:42', '2025-07-01 23:07:09', 'unread', 1),
+(11, 51, 2, '2025-07-02 13:40:52', '2025-07-01 23:07:09', 'unread', 1),
 (12, 47, 3, '2025-07-01 23:56:42', '2025-07-01 23:08:07', 'unread', 1),
 (13, 49, 3, NULL, '2025-07-01 23:08:07', 'unread', 0),
 (14, 54, 3, NULL, '2025-07-01 23:08:07', 'unread', 0),
@@ -376,7 +411,23 @@ INSERT INTO `user_notifications` (`id`, `user_id`, `notification_id`, `read_at`,
 (20, 54, 5, NULL, '2025-07-01 23:49:54', 'unread', 0),
 (21, 47, 6, '2025-07-01 23:56:06', '2025-07-01 23:51:35', 'unread', 1),
 (22, 49, 6, NULL, '2025-07-01 23:51:35', 'unread', 0),
-(23, 54, 6, NULL, '2025-07-01 23:51:35', 'unread', 0);
+(23, 54, 6, NULL, '2025-07-01 23:51:35', 'unread', 0),
+(24, 43, 7, NULL, '2025-07-02 13:40:14', 'unread', 0),
+(25, 47, 7, '2025-07-05 14:21:40', '2025-07-02 13:40:14', 'unread', 1),
+(26, 48, 7, NULL, '2025-07-02 13:40:14', 'unread', 0),
+(27, 49, 7, NULL, '2025-07-02 13:40:14', 'unread', 0),
+(28, 50, 7, NULL, '2025-07-02 13:40:14', 'unread', 0),
+(29, 51, 7, '2025-07-04 07:02:31', '2025-07-02 13:40:14', 'unread', 1),
+(30, 54, 7, NULL, '2025-07-02 13:40:14', 'unread', 0),
+(31, 55, 7, NULL, '2025-07-02 13:40:14', 'unread', 0),
+(32, 43, 9, NULL, '2025-07-03 13:13:04', 'unread', 0),
+(33, 50, 9, NULL, '2025-07-03 13:13:04', 'unread', 0),
+(34, 51, 9, '2025-07-04 06:53:39', '2025-07-03 13:13:04', 'unread', 1),
+(35, 56, 9, NULL, '2025-07-03 13:13:04', 'unread', 0),
+(36, 47, 10, '2025-07-05 14:21:38', '2025-07-04 06:59:46', 'unread', 1),
+(37, 49, 10, NULL, '2025-07-04 06:59:46', 'unread', 0),
+(38, 54, 10, NULL, '2025-07-04 06:59:46', 'unread', 0),
+(39, 57, 10, NULL, '2025-07-04 06:59:46', 'unread', 0);
 
 --
 -- Indexes for dumped tables
@@ -519,7 +570,7 @@ ALTER TABLE `admin_activity`
 -- AUTO_INCREMENT for table `announcements`
 --
 ALTER TABLE `announcements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `clubs`
@@ -531,13 +582,13 @@ ALTER TABLE `clubs`
 -- AUTO_INCREMENT for table `club_managers`
 --
 ALTER TABLE `club_managers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `events`
 --
 ALTER TABLE `events`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `login_logs`
@@ -549,25 +600,25 @@ ALTER TABLE `login_logs`
 -- AUTO_INCREMENT for table `memberships`
 --
 ALTER TABLE `memberships`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `membership_requests`
 --
 ALTER TABLE `membership_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `notification_logs`
 --
 ALTER TABLE `notification_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `system_announcements`
@@ -585,13 +636,13 @@ ALTER TABLE `system_settings`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=56;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
 
 --
 -- AUTO_INCREMENT for table `user_notifications`
 --
 ALTER TABLE `user_notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- Constraints for dumped tables
