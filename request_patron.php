@@ -1,3 +1,4 @@
+
 <?php
 session_start();
 
@@ -32,7 +33,7 @@ if ($patron_result->num_rows > 0) {
 $message = '';
 $has_pending_request = false;
 
-// Check if user already has a pending request
+// Check if user already has a pending request - FIXED COLUMN NAME
 $request_check = $conn->prepare("
     SELECT id, status 
     FROM patron_requests 
@@ -51,12 +52,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_request']) && 
     $club_id = $_POST['club_id'];
     $request_notes = trim($_POST['request_notes']);
     
-    // Insert request
+    // Insert request with requested_by field - FIXED COLUMN NAME
     $insert = $conn->prepare("
-        INSERT INTO patron_requests (user_id, club_id, request_notes, status)
-        VALUES (?, ?, ?, 'pending')
+        INSERT INTO patron_requests (user_id, club_id, request_notes, status, requested_by)
+        VALUES (?, ?, ?, 'pending', ?)
     ");
-    $insert->bind_param("iis", $_SESSION['user_id'], $club_id, $request_notes);
+    $insert->bind_param("iisi", $_SESSION['user_id'], $club_id, $request_notes, $_SESSION['user_id']);
     
     if ($insert->execute()) {
         $has_pending_request = true;

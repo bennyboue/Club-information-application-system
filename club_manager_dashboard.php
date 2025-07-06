@@ -35,7 +35,9 @@ $club_query->execute();
 $club_result = $club_query->get_result();
 
 if ($club_result->num_rows === 0) {
-    die("You are not managing any clubs.");
+    $_SESSION['message'] = "You are not a patron of any club. Please request patron status.";
+    header('Location: request_patron.php');
+    exit();
 }
 
 $clubs = [];

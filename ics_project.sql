@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 06, 2025 at 03:02 PM
+-- Generation Time: Jul 06, 2025 at 06:59 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -96,22 +96,22 @@ CREATE TABLE `clubs` (
 --
 
 INSERT INTO `clubs` (`id`, `patron_id`, `name`, `initials`, `description`, `created_by`, `created_at`) VALUES
-(1, 0, 'Chess Club', 'CC', 'Strategic thinking and competitive chess games. Join us for tournaments, training sessions, and intellectual challenges that sharpen your mind.', NULL, '2025-06-17 18:20:45'),
-(2, 0, 'Scrabble Society', 'SS', 'Word enthusiasts unite! Expand your vocabulary while enjoying competitive word games and linguistic challenges with fellow word lovers.', NULL, '2025-06-17 18:20:45'),
-(3, 0, 'Mathematics Olympiad Club', 'MOC', 'Advanced mathematical problem solving and competition preparation. Perfect for students who love numbers and logical reasoning.', NULL, '2025-06-17 18:20:45'),
-(4, 0, 'Debate & Critical Thinking Club', 'DCTC', 'Develop your argumentation skills, public speaking abilities, and critical thinking through structured debates and discussions.', NULL, '2025-06-17 18:20:45'),
-(5, 0, 'Painting & Visual Arts Club', 'PVAC', 'Express creativity through various painting techniques, color theory, and visual storytelling. All skill levels welcome!', NULL, '2025-06-17 18:20:45'),
-(6, 0, 'Sculpting & 3D Arts Club', 'S3AC', 'Work with clay, wood, and modern materials to create three-dimensional masterpieces. Learn traditional and contemporary sculpting techniques.', NULL, '2025-06-17 18:20:45'),
-(7, 0, 'Music Harmony Club', 'MHC', 'Vocal and instrumental music ensemble. From classical to contemporary, join us in creating beautiful harmonies and musical performances.', NULL, '2025-06-17 18:20:45'),
-(8, 0, 'Creative Writing & Literature Club', 'CWLC', 'Poets, storytellers, and literature enthusiasts gather to share original works, analyze great literature, and inspire creativity.', NULL, '2025-06-17 18:20:45'),
-(9, 0, 'Physics & Astronomy Club', 'PAC', 'Explore the mysteries of the universe, conduct experiments, and observe celestial phenomena through telescopes and scientific inquiry.', NULL, '2025-06-17 18:20:45'),
-(10, 0, 'Chemistry Lab Enthusiasts', 'CLE', 'Safe chemical experiments, molecular model building, and understanding the building blocks of matter in hands-on laboratory sessions.', NULL, '2025-06-17 18:20:45'),
-(11, 0, 'Biology & Environmental Science Club', 'BESC', 'Study living organisms, ecosystems, and environmental conservation through field trips, lab work, and nature observation.', NULL, '2025-06-17 18:20:45'),
-(12, 0, 'Robotics & Engineering Club', 'REC', 'Build robots, learn programming, and solve engineering challenges using technology, coding, and innovative problem-solving approaches.', NULL, '2025-06-17 18:20:45'),
-(13, 0, 'Football Champions Club', 'FCC', 'Competitive football training, matches, and team building. Develop athletic skills, teamwork, and sportsmanship on the field.', NULL, '2025-06-17 18:20:45'),
-(14, 0, 'Basketball Elite Club', 'BEC', 'Shooting hoops, strategic plays, and competitive basketball. Join our team for training sessions, tournaments, and skill development.', NULL, '2025-06-17 18:20:45'),
-(15, 0, 'Track & Field Athletics Club', 'TFAC', 'Running, jumping, throwing events and athletic competitions. Train for various track and field events with professional coaching.', NULL, '2025-06-17 18:20:45'),
-(16, 0, 'Swimming & Aquatics Club', 'SAC', 'Competitive swimming, water safety, and aquatic sports. Improve your swimming techniques and participate in inter-school competitions.', NULL, '2025-06-17 18:20:45');
+(1, 47, 'Chess Club', 'CC', 'Strategic thinking and competitive chess games. Join us for tournaments, training sessions, and intellectual challenges that sharpen your mind.', 48, '2025-06-17 18:20:45'),
+(2, 57, 'Scrabble Society', 'SS', 'Word enthusiasts unite! Expand your vocabulary while enjoying competitive word games and linguistic challenges with fellow word lovers.', 48, '2025-06-17 18:20:45'),
+(3, 54, 'Mathematics Olympiad Club', 'MOC', 'Advanced mathematical problem solving and competition preparation. Perfect for students who love numbers and logical reasoning.', 48, '2025-06-17 18:20:45'),
+(4, 48, 'Debate & Critical Thinking Club', 'DCTC', 'Develop your argumentation skills, public speaking abilities, and critical thinking through structured debates and discussions.', 48, '2025-06-17 18:20:45'),
+(5, 48, 'Painting & Visual Arts Club', 'PVAC', 'Express creativity through various painting techniques, color theory, and visual storytelling. All skill levels welcome!', 48, '2025-06-17 18:20:45'),
+(6, 48, 'Sculpting & 3D Arts Club', 'S3AC', 'Work with clay, wood, and modern materials to create three-dimensional masterpieces. Learn traditional and contemporary sculpting techniques.', 48, '2025-06-17 18:20:45'),
+(7, 48, 'Music Harmony Club', 'MHC', 'Vocal and instrumental music ensemble. From classical to contemporary, join us in creating beautiful harmonies and musical performances.', 48, '2025-06-17 18:20:45'),
+(8, 48, 'Creative Writing & Literature Club', 'CWLC', 'Poets, storytellers, and literature enthusiasts gather to share original works, analyze great literature, and inspire creativity.', 48, '2025-06-17 18:20:45'),
+(9, 48, 'Physics & Astronomy Club', 'PAC', 'Explore the mysteries of the universe, conduct experiments, and observe celestial phenomena through telescopes and scientific inquiry.', 48, '2025-06-17 18:20:45'),
+(10, 48, 'Chemistry Lab Enthusiasts', 'CLE', 'Safe chemical experiments, molecular model building, and understanding the building blocks of matter in hands-on laboratory sessions.', 48, '2025-06-17 18:20:45'),
+(11, 48, 'Biology & Environmental Science Club', 'BESC', 'Study living organisms, ecosystems, and environmental conservation through field trips, lab work, and nature observation.', 48, '2025-06-17 18:20:45'),
+(12, 48, 'Robotics & Engineering Club', 'REC', 'Build robots, learn programming, and solve engineering challenges using technology, coding, and innovative problem-solving approaches.', 48, '2025-06-17 18:20:45'),
+(13, 54, 'Football Champions Club', 'FCC', 'Competitive football training, matches, and team building. Develop athletic skills, teamwork, and sportsmanship on the field.', 48, '2025-06-17 18:20:45'),
+(14, 48, 'Basketball Elite Club', 'BEC', 'Shooting hoops, strategic plays, and competitive basketball. Join our team for training sessions, tournaments, and skill development.', 48, '2025-06-17 18:20:45'),
+(15, 47, 'Track & Field Athletics Club', 'TFAC', 'Running, jumping, throwing events and athletic competitions. Train for various track and field events with professional coaching.', 48, '2025-06-17 18:20:45'),
+(16, 48, 'Swimming & Aquatics Club', 'SAC', 'Competitive swimming, water safety, and aquatic sports. Improve your swimming techniques and participate in inter-school competitions.', 48, '2025-06-17 18:20:45');
 
 -- --------------------------------------------------------
 
@@ -290,6 +290,21 @@ INSERT INTO `notification_logs` (`id`, `notification_id`, `admin_id`, `action`, 
 (7, 7, 48, 'created', '{\"count\":8,\"users\":[{\"id\":43,\"username\":\"Kiki\",\"email\":\"mwiberikian6@gmail.com\"},{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":48,\"username\":\"Bruce\",\"email\":\"bruce@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":50,\"username\":\"Leroy\",\"email\":\"ndiao@gmail.com\"},{\"id\":51,\"username\":\"Kian\",\"email\":\"mwiberikian1@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"},{\"id\":55,\"username\":\"Reed\",\"email\":\"mwiberikian2@gmail.com\"}]}', '2025-07-02 13:40:14'),
 (8, 9, 48, 'created', '{\"count\":4,\"users\":[{\"id\":43,\"username\":\"Kiki\",\"email\":\"mwiberikian6@gmail.com\"},{\"id\":50,\"username\":\"Leroy\",\"email\":\"ndiao@gmail.com\"},{\"id\":51,\"username\":\"Kian\",\"email\":\"mwiberikian1@gmail.com\"},{\"id\":56,\"username\":\"Hope\",\"email\":\"hope@gmail.com\"}]}', '2025-07-03 13:13:04'),
 (9, 10, 48, 'created', '{\"count\":4,\"users\":[{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"},{\"id\":57,\"username\":\"Benjamin\",\"email\":\"benja@gmail.com\"}]}', '2025-07-04 06:59:46');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `patron_requests`
+--
+
+CREATE TABLE `patron_requests` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `club_id` int(11) NOT NULL,
+  `request_notes` text DEFAULT NULL,
+  `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -520,6 +535,14 @@ ALTER TABLE `notification_logs`
   ADD KEY `admin_id` (`admin_id`);
 
 --
+-- Indexes for table `patron_requests`
+--
+ALTER TABLE `patron_requests`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `club_id` (`club_id`);
+
+--
 -- Indexes for table `system_announcements`
 --
 ALTER TABLE `system_announcements`
@@ -621,6 +644,12 @@ ALTER TABLE `notification_logs`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
+-- AUTO_INCREMENT for table `patron_requests`
+--
+ALTER TABLE `patron_requests`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `system_announcements`
 --
 ALTER TABLE `system_announcements`
@@ -701,6 +730,13 @@ ALTER TABLE `notifications`
 ALTER TABLE `notification_logs`
   ADD CONSTRAINT `notification_logs_ibfk_1` FOREIGN KEY (`notification_id`) REFERENCES `notifications` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `notification_logs_ibfk_2` FOREIGN KEY (`admin_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `patron_requests`
+--
+ALTER TABLE `patron_requests`
+  ADD CONSTRAINT `patron_requests_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `patron_requests_ibfk_2` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `system_announcements`

@@ -533,7 +533,7 @@ $stats = [
     'total_clubs' => getStat($mysqli, "SELECT COUNT(*) as count FROM clubs"),
     'total_users' => getStat($mysqli, "SELECT COUNT(*) as count FROM users"),
     'active_events' => getStat($mysqli, "SELECT COUNT(*) as count FROM events WHERE event_date >= CURDATE()"),
-    'pending_requests' => getStat($mysqli, "SELECT COUNT(*) as count FROM memberships WHERE status = 'pending'")
+    'pending_requests' => getStat($mysqli, "SELECT COUNT(*) as count FROM patron_requests WHERE status = 'pending'")
 ];
 
 // Reset the admins result pointer for the form
@@ -1236,11 +1236,11 @@ $admins_result->data_seek(0);
         <div class="stat-label">Upcoming Events</div>
     </a>
     
-    <a href="patron_requests.php" class="stat-card" style="display: block; text-decoration: none; color: inherit;">
-        <div class="stat-icon"><i class="fas fa-clock"></i></div>
-        <div class="stat-number"><?php echo $stats['pending_requests']; ?></div>
-        <div class="stat-label">Pending Requests</div>
-    </a>
+   <a href="admin_patron_requests.php" class="stat-card" style="display: block; text-decoration: none; color: inherit;">
+    <div class="stat-icon"><i class="fas fa-clock"></i></div>
+    <div class="stat-number"><?php echo $stats['pending_requests']; ?></div>
+    <div class="stat-label">Pending Patron Requests</div>
+</a>
 </div>
 
        
