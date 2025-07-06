@@ -1,6 +1,5 @@
 <?php
 require __DIR__ . '/vendor/autoload.php';
-
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\SMTP;
@@ -19,12 +18,8 @@ if ($mysqli->connect_error) {
 }
 
 // =================================================================
-// ENHANCED NOTIFICATION FUNCTIONS
+// ENHANCED NOTIFICATION FUNCTIONS (UPDATED TO MATCH YOUR SCHEMA)
 // =================================================================
-/**
- * Create notification when announcement is posted
- * Improved with better error handling and logging
- */
 function createNotificationForAnnouncement($mysqli, $title, $content, $club_id, $admin_id, $target_audience = 'all', $priority = 'normal') {
     try {
         // Validate input parameters
@@ -35,8 +30,21 @@ function createNotificationForAnnouncement($mysqli, $title, $content, $club_id, 
         // Start transaction
         $mysqli->begin_transaction();
         
-        // Insert into notifications table with enhanced fields
-        $notification_query = "INSERT INTO notifications (title, message, type, priority, target_audience, club_id, created_by, created_at, expires_at) VALUES (?, ?, 'announcement', ?, ?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY))";
+        // Insert into notifications table (matches your schema)
+        $notification_query = "INSERT INTO notifications (
+            title, 
+            message, 
+            type, 
+            priority, 
+            target_audience, 
+            club_id, 
+            created_by, 
+            created_at, 
+            expires_at,
+            is_immediate,
+            is_active
+        ) VALUES (?, ?, 'announcement', ?, ?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 0, 1)";
+        
         $notification_stmt = $mysqli->prepare($notification_query);
         
         if (!$notification_stmt) {
@@ -51,15 +59,27 @@ function createNotificationForAnnouncement($mysqli, $title, $content, $club_id, 
         
         $notification_id = $mysqli->insert_id;
         
-        // Insert the announcement with notification link
-        $announcement_query = "INSERT INTO announcements (title, content, club_id, notification_id, created_by, created_at) VALUES (?, ?, ?, ?, ?, NOW())";
+        // Insert the announcement (matches your announcements table schema)
+        $announcement_query = "INSERT INTO announcements (
+            title, 
+            content, 
+            club_id, 
+            notification_id, 
+            created_by, 
+            created_at,
+            announcement_type,
+            priority,
+            status,
+            is_public
+        ) VALUES (?, ?, ?, ?, ?, NOW(), 'general', ?, 'published', 1)";
+        
         $announcement_stmt = $mysqli->prepare($announcement_query);
         
         if (!$announcement_stmt) {
             throw new Exception("Failed to prepare announcement statement: " . $mysqli->error);
         }
         
-        $announcement_stmt->bind_param("ssiii", $title, $content, $club_id, $notification_id, $admin_id);
+        $announcement_stmt->bind_param("ssiis", $title, $content, $club_id, $notification_id, $admin_id, $priority);
         
         if (!$announcement_stmt->execute()) {
             throw new Exception("Failed to insert announcement: " . $announcement_stmt->error);
@@ -87,10 +107,6 @@ function createNotificationForAnnouncement($mysqli, $title, $content, $club_id, 
     }
 }
 
-/**
- * Enhanced function to create individual user notification entries
- * Returns count of affected users
- */
 function createUserNotifications($mysqli, $notification_id, $target_audience, $club_id) {
     $users_query = "";
     $params = [];
@@ -103,24 +119,21 @@ function createUserNotifications($mysqli, $notification_id, $target_audience, $c
             
         case 'club_managers':
             if ($club_id) {
-                // Only notify managers of the specific club
                 $users_query = "SELECT DISTINCT u.id, u.username, u.email FROM users u 
                                JOIN club_managers cm ON u.id = cm.user_id 
                                WHERE u.role = 'club_manager' AND cm.club_id = ?";
                 $params[] = $club_id;
                 $param_types = "i";
             } else {
-                // Notify all club managers
                 $users_query = "SELECT DISTINCT u.id, u.username, u.email FROM users u WHERE u.role = 'club_manager'";
             }
             break;
             
         case 'club_members':
             if ($club_id) {
-                // All members of specific club
                 $users_query = "SELECT DISTINCT u.id, u.username, u.email FROM users u 
-                               JOIN club_members cm ON u.id = cm.user_id 
-                               WHERE cm.club_id = ?";
+                               JOIN memberships m ON u.id = m.user_id 
+                               WHERE m.club_id = ? AND m.status = 'approved'";
                 $params[] = $club_id;
                 $param_types = "i";
             } else {
@@ -135,14 +148,12 @@ function createUserNotifications($mysqli, $notification_id, $target_audience, $c
         case 'all':
         default:
             if ($club_id) {
-                // All members of specific club + all admins
                 $users_query = "SELECT DISTINCT u.id, u.username, u.email FROM users u 
-                               LEFT JOIN club_members cm ON u.id = cm.user_id 
-                               WHERE (cm.club_id = ? OR u.role = 'admin')";
+                               LEFT JOIN memberships m ON u.id = m.user_id 
+                               WHERE (m.club_id = ? AND m.status = 'approved') OR u.role = 'admin'";
                 $params[] = $club_id;
                 $param_types = "i";
             } else {
-                // All active users
                 $users_query = "SELECT DISTINCT u.id, u.username, u.email FROM users u";
             }
             break;
@@ -165,7 +176,14 @@ function createUserNotifications($mysqli, $notification_id, $target_audience, $c
     $users_result = $users_stmt->get_result();
     
     // Insert notification for each user
-    $insert_user_notification = "INSERT IGNORE INTO user_notifications (user_id, notification_id, status, created_at) VALUES (?, ?, 'unread', NOW())";
+    $insert_user_notification = "INSERT IGNORE INTO user_notifications (
+        user_id, 
+        notification_id, 
+        status, 
+        created_at,
+        is_read
+    ) VALUES (?, ?, 'unread', NOW(), 0)";
+    
     $user_notif_stmt = $mysqli->prepare($insert_user_notification);
     
     if (!$user_notif_stmt) {
@@ -193,11 +211,15 @@ function createUserNotifications($mysqli, $notification_id, $target_audience, $c
     ];
 }
 
-/**
- * Log notification activity for audit trail
- */
 function logNotificationActivity($mysqli, $notification_id, $admin_id, $action, $details) {
-    $log_query = "INSERT INTO notification_logs (notification_id, admin_id, action, details, created_at) VALUES (?, ?, ?, ?, NOW())";
+    $log_query = "INSERT INTO notification_logs (
+        notification_id, 
+        admin_id, 
+        action, 
+        details, 
+        created_at
+    ) VALUES (?, ?, ?, ?, NOW())";
+    
     $log_stmt = $mysqli->prepare($log_query);
     
     if ($log_stmt) {
@@ -207,86 +229,70 @@ function logNotificationActivity($mysqli, $notification_id, $admin_id, $action, 
     }
 }
 
-/**
- * Send immediate notification (for urgent announcements)
- */
-function sendImmediateNotification($mysqli, $title, $content, $target_audience, $club_id, $admin_id) {
-    try {
-        $mysqli->begin_transaction();
-        
-        // Create notification with high priority
-        $result = createNotificationForAnnouncement($mysqli, $title, $content, $club_id, $admin_id, $target_audience, 'high');
-        
-        // Mark as immediate for faster processing
-        $update_query = "UPDATE notifications SET is_immediate = 1, sent_at = NOW() WHERE id = ?";
-        $update_stmt = $mysqli->prepare($update_query);
-        $update_stmt->bind_param("i", $result['notification_id']);
-        $update_stmt->execute();
-        
-        $mysqli->commit();
-        
-        return $result;
-        
-    } catch (Exception $e) {
-        $mysqli->rollback();
-        throw $e;
-    }
-}
-
-/**
- * Send email notifications (if email system is enabled)
- */
-function sendEmailNotification($email, $title, $content, $priority = 'normal') {
-    $config = [
-        'host' => 'smtp.example.com',
-        'username' => 'your@email.com',
-        'password' => 'your_password',
-        'port' => 587,
-        'encryption' => 'tls',
-        'from_email' => 'noreply@yourschool.edu',
-        'from_name' => 'School Club System'
-    ];
-
-    $mail = new PHPMailer(true);
-
-    try {
-        // Server settings
-        $mail->isSMTP();
-        $mail->Host       = $config['host'];
-        $mail->SMTPAuth   = true;
-        $mail->Username   = $config['username'];
-        $mail->Password   = $config['password'];
-        $mail->SMTPSecure = $config['encryption'];
-        $mail->Port       = $config['port'];
-
-        // Recipients
-        $mail->setFrom($config['from_email'], $config['from_name']);
-        $mail->addAddress($email);
-
-        // Content
-        $mail->isHTML(true);
-        $mail->Subject = "[School Clubs] $title";
-        $mail->Body    = nl2br($content);
-        $mail->AltBody = strip_tags($content);
-
-        // Priority
-        if ($priority === 'high') {
-            $mail->Priority = 1;
-            $mail->AddCustomHeader('X-Priority: 1');
-            $mail->AddCustomHeader('Importance: High');
-        }
-
-        $mail->send();
-        return true;
-    } catch (Exception $e) {
-        error_log("Mailer Error: " . $mail->ErrorInfo);
-        return false;
-    }
-}
-
 // =================================================================
 // ADMIN DASHBOARD FUNCTIONALITY
 // =================================================================
+$message = "";
+$message_type = "";
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Handle announcement creation
+    if (isset($_POST['action']) && $_POST['action'] == 'create_announcement') {
+        $title = trim($_POST['title']);
+        $content = trim($_POST['content']);
+        $club_id = !empty($_POST['club_id']) ? intval($_POST['club_id']) : null;
+        $target_audience = $_POST['target_audience'] ?? 'all';
+        $priority = $_POST['priority'] ?? 'normal';
+        $is_immediate = isset($_POST['immediate_send']);
+        $send_email = isset($_POST['send_email']);
+        $admin_id = $_SESSION['user_id'];
+        
+        // Validation
+        if (empty($title)) {
+            $message = "Announcement title is required.";
+            $message_type = "error";
+        } elseif (empty($content)) {
+            $message = "Announcement content is required.";
+            $message_type = "error";
+        } else {
+            try {
+                // Create notification and announcement
+                $result = createNotificationForAnnouncement($mysqli, $title, $content, $club_id, $admin_id, $target_audience, $priority);
+                
+                if ($is_immediate) {
+                    // Mark as immediate if requested
+                    $update_query = "UPDATE notifications SET is_immediate = 1, sent_at = NOW() WHERE id = ?";
+                    $update_stmt = $mysqli->prepare($update_query);
+                    $update_stmt->bind_param("i", $result['notification_id']);
+                    $update_stmt->execute();
+                }
+                
+                $message = "Announcement posted successfully and notifications sent to " . $result['affected_users']['count'] . " users!";
+                $message_type = "success";
+                
+                // Send email notifications if requested
+                if ($send_email && isset($result['affected_users']['users'])) {
+                    $email_count = 0;
+                    foreach ($result['affected_users']['users'] as $user) {
+                        if (!empty($user['email'])) {
+                            if (sendEmailNotification($user['email'], $title, $content, $priority)) {
+                                $email_count++;
+                            }
+                        }
+                    }
+                    $message .= " Email notifications sent to {$email_count} users.";
+                }
+                
+            } catch (Exception $e) {
+                $message = "Error posting announcement: " . $e->getMessage();
+                $message_type = "error";
+                error_log("Announcement creation error: " . $e->getMessage());
+            }
+        }
+    }
+}
+
+
 $message = "";
 $message_type = "";
 
