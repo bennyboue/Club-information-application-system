@@ -1,5 +1,3 @@
-[file name]: admin_patron_requests.php
-[file content begin]
 <?php
 require __DIR__ . '/vendor/autoload.php';
 session_start();
@@ -39,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($action === 'approve') {
                     // Assign patron to club
                     $assign_stmt = $mysqli->prepare("INSERT INTO club_managers (user_id, club_id, is_patron) VALUES (?, ?, 1)");
-                    $assign_stmt->bind_param("ii", $request['patron_id'], $request['club_id']);
+                    $assign_stmt->bind_param("ii", $request['user_id'], $request['club_id']);
                     $assign_stmt->execute();
                     
                     // Update request status
@@ -49,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     // Update user role
                     $role_stmt = $mysqli->prepare("UPDATE users SET role = 'club_manager' WHERE id = ?");
-                    $role_stmt->bind_param("i", $request['patron_id']);
+                    $role_stmt->bind_param("i", $request['user_id']);
                     $role_stmt->execute();
                     
                     $message = "Patron assigned successfully!";
@@ -74,16 +72,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get pending patron requests
+// Get pending patron requests (FIXED QUERY)
 $requests_query = "
     SELECT pr.id, pr.created_at, pr.request_notes, 
            c.name AS club_name, 
-           u.username AS patron_name,
-           um.username AS requested_by
+           u.username AS patron_name
     FROM patron_requests pr
     JOIN clubs c ON pr.club_id = c.id
-    JOIN users u ON pr.patron_id = u.id
-    JOIN users um ON pr.requested_by = um.id
+    JOIN users u ON pr.user_id = u.id
     WHERE pr.status = 'pending'
     ORDER BY pr.created_at DESC
 ";
@@ -310,7 +306,6 @@ if ($requests_result === false) {
                         <tr>
                             <th>Club</th>
                             <th>Patron</th>
-                            <th>Requested By</th>
                             <th>Date Requested</th>
                             <th>Actions</th>
                         </tr>
@@ -333,12 +328,6 @@ if ($requests_result === false) {
                                     <div class="request-detail">
                                         <i class="fas fa-user-tie"></i>
                                         <?= htmlspecialchars($request['patron_name']) ?>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="request-detail">
-                                        <i class="fas fa-user"></i>
-                                        <?= htmlspecialchars($request['requested_by']) ?>
                                     </div>
                                 </td>
                                 <td>
@@ -379,4 +368,3 @@ if ($requests_result === false) {
     </div>
 </body>
 </html>
-[file content end]
