@@ -79,7 +79,7 @@ function createNotificationForAnnouncement($mysqli, $title, $content, $club_id, 
             throw new Exception("Failed to prepare announcement statement: " . $mysqli->error);
         }
         
-        $announcement_stmt->bind_param("ssiis", $title, $content, $club_id, $notification_id, $admin_id, $priority);
+        $announcement_stmt->bind_param("ssiiss", $title, $content, $club_id, $notification_id, $admin_id, $priority);
         
         if (!$announcement_stmt->execute()) {
             throw new Exception("Failed to insert announcement: " . $announcement_stmt->error);
@@ -441,11 +441,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 // Create notification and announcement
-                if ($is_immediate) {
-                    $result = sendImmediateNotification($mysqli, $title, $content, $target_audience, $club_id, $admin_id);
-                    $message = "Urgent announcement sent immediately to " . $result['affected_users']['count'] . " users!";
-                    $message_type = "success";
-                } else {
+               if ($is_immediate) {
+    $result = createNotificationForAnnouncement($mysqli, $title, $content, $club_id, $admin_id, $target_audience, $priority);
+    
+    // Mark as immediate if requested
+    $update_query = "UPDATE notifications SET is_immediate = 1, sent_at = NOW() WHERE id = ?";
+    $update_stmt = $mysqli->prepare($update_query);
+    $update_stmt->bind_param("i", $result['notification_id']);
+    $update_stmt->execute();
+    
+    $message = "Urgent announcement sent immediately to " . $result['affected_users']['count'] . " users!";
+    $message_type = "success";
+} else {
                     $result = createNotificationForAnnouncement($mysqli, $title, $content, $club_id, $admin_id, $target_audience, $priority);
                     $message = "Announcement posted successfully and notifications sent to " . $result['affected_users']['count'] . " users!";
                     $message_type = "success";

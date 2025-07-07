@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 06, 2025 at 06:59 PM
+-- Generation Time: Jul 07, 2025 at 06:01 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -73,7 +73,19 @@ INSERT INTO `announcements` (`id`, `title`, `content`, `club_id`, `created_by`, 
 (14, 'Ray', 'rkl coming', 13, 54, 'general', 'medium', 'draft', 1, NULL, NULL, '2025-07-02 13:42:19', '2025-07-02 13:42:19', NULL),
 (16, 'HAPPY BDAY HM', 'Haapppyybdaay Hope!!!', 1, 48, 'general', 'medium', 'draft', 1, NULL, NULL, '2025-07-03 13:13:04', '2025-07-03 13:13:04', 9),
 (17, 'See', 'See', 15, 47, 'general', 'medium', 'draft', 1, NULL, NULL, '2025-07-03 13:49:04', '2025-07-03 13:49:04', NULL),
-(18, 'Urgent Notice', 'URGENT: [DESCRIBE_URGENT_MATTER]. Please take immediate action or note the following important information: [DETAILS]', NULL, 48, 'general', 'medium', 'draft', 1, NULL, NULL, '2025-07-04 06:59:46', '2025-07-04 06:59:46', 10);
+(18, 'Urgent Notice', 'URGENT: [DESCRIBE_URGENT_MATTER]. Please take immediate action or note the following important information: [DETAILS]', NULL, 48, 'general', 'medium', 'draft', 1, NULL, NULL, '2025-07-04 06:59:46', '2025-07-04 06:59:46', 10),
+(19, 'Urgent Notice', 'URGENT!!!!. Please take immediate action or note the following important information:\r\nThe system will have a maintenance schedule for 7th July 2025 at 1pm - 4pm.', NULL, 48, 'general', '', 'published', 1, NULL, NULL, '2025-07-07 03:10:30', '2025-07-07 03:10:30', 13),
+(20, 'Urgent Notice', 'URGENT!!!!. Please take immediate action or note the following important information:\r\nThe system will have a maintenance schedule for 7th July 2025 at 1pm - 4pm.', NULL, 48, 'general', '', 'published', 1, NULL, NULL, '2025-07-07 03:10:50', '2025-07-07 03:10:50', 14),
+(21, 'Urgent Notice', 'URGENT!!!!. Please take immediate action or note the following important information:\r\nThe system will have a maintenance schedule for 7th July 2025 at 1pm - 4pm.', NULL, 48, 'general', '', 'published', 1, NULL, NULL, '2025-07-07 03:18:17', '2025-07-07 03:18:17', 15),
+(22, 'Urgent Notice', 'URGENT!!!!. Please take immediate action or note the following important information:\r\nThe system will have a maintenance schedule for 7th July 2025 at 1pm - 4pm.', NULL, 48, 'general', '', 'published', 1, NULL, NULL, '2025-07-07 03:18:17', '2025-07-07 03:18:17', 16),
+(23, 'Urgent Notice', 'URGENT!!!!. Please take immediate action or note the following important information:\r\nThe system will have a maintenance schedule for 7th July 2025 at 1pm - 4pm.', NULL, 48, 'general', '', 'published', 1, NULL, NULL, '2025-07-07 03:18:38', '2025-07-07 03:18:38', 17),
+(24, 'Urgent Notice', 'URGENT!!!!. Please take immediate action or note the following important information:\r\nThe system will have a maintenance schedule for 7th July 2025 at 1pm - 4pm.', NULL, 48, 'general', '', 'published', 1, NULL, NULL, '2025-07-07 03:18:38', '2025-07-07 03:18:38', 18),
+(25, 'Urgent Notice', 'URGENT!!!!. Please take immediate action or note the following important information:\r\nThe system will have a maintenance schedule for 7th July 2025 at 1pm - 4pm.', NULL, 48, 'general', '', 'published', 1, NULL, NULL, '2025-07-07 03:18:54', '2025-07-07 03:18:54', 19),
+(26, 'Urgent Notice', 'URGENT!!!!. Please take immediate action or note the following important information:\r\nThe system will have a maintenance schedule for 7th July 2025 at 1pm - 4pm.', NULL, 48, 'general', '', 'published', 1, NULL, NULL, '2025-07-07 03:18:54', '2025-07-07 03:18:54', 20),
+(29, 'Urgent Notice', 'Error posting announcement: Club ID required for club members target audience', 7, 48, 'general', '', 'published', 1, NULL, NULL, '2025-07-07 03:20:31', '2025-07-07 03:20:31', 23),
+(30, 'Urgent Notice', 'Error posting announcement: Club ID required for club members target audience', 7, 48, 'general', '', 'published', 1, NULL, NULL, '2025-07-07 03:20:31', '2025-07-07 03:20:31', 24),
+(31, 'Urgent Notice', 'Error posting announcement: Club ID required for club members target audience', NULL, 48, 'general', '', 'published', 1, NULL, NULL, '2025-07-07 03:20:55', '2025-07-07 03:20:55', 25),
+(32, 'Urgent Notice', 'Error posting announcement: Club ID required for club members target audience', NULL, 48, 'general', '', 'published', 1, NULL, NULL, '2025-07-07 03:20:55', '2025-07-07 03:20:55', 26);
 
 -- --------------------------------------------------------
 
@@ -137,7 +149,8 @@ CREATE TABLE `club_managers` (
 INSERT INTO `club_managers` (`id`, `user_id`, `club_id`, `assigned_date`, `status`, `is_patron`, `created_at`, `updated_at`) VALUES
 (2, 47, 15, '2025-07-02 03:05:06', 'active', 1, '2025-07-02 00:05:06', '2025-07-02 00:05:06'),
 (3, 54, 13, '2025-07-02 16:38:38', 'active', 1, '2025-07-02 13:38:38', '2025-07-02 13:38:38'),
-(4, 57, 2, '2025-07-04 09:51:53', 'active', 1, '2025-07-04 06:51:53', '2025-07-04 06:51:53');
+(5, 49, 12, '2025-07-06 20:52:53', 'active', 1, '2025-07-06 17:52:53', '2025-07-06 17:52:53'),
+(6, 57, 7, '2025-07-07 06:57:03', 'active', 1, '2025-07-07 03:57:03', '2025-07-07 03:57:03');
 
 -- --------------------------------------------------------
 
@@ -197,11 +210,10 @@ INSERT INTO `memberships` (`id`, `user_id`, `club_id`, `status`, `joined_at`) VA
 (13, 43, 4, 'approved', '2025-06-20 06:29:24'),
 (14, 49, 7, 'approved', '2025-06-24 11:06:29'),
 (15, 51, 4, 'approved', '2025-06-30 22:45:53'),
-(16, 51, 15, 'pending', '2025-07-02 00:28:25'),
 (17, 56, 1, 'pending', '2025-07-03 13:04:02'),
 (18, 51, 2, 'pending', '2025-07-04 07:02:18'),
 (19, 58, 7, 'pending', '2025-07-05 14:17:48'),
-(24, 58, 15, 'pending', '2025-07-06 13:00:46');
+(28, 58, 15, 'approved', '2025-07-07 03:53:21');
 
 -- --------------------------------------------------------
 
@@ -222,7 +234,7 @@ CREATE TABLE `membership_requests` (
 --
 
 INSERT INTO `membership_requests` (`id`, `club_id`, `user_id`, `status`, `created_at`) VALUES
-(1, 15, 58, 'approved', '2025-07-06 12:59:26');
+(3, 7, 51, 'pending', '2025-07-07 03:55:53');
 
 -- --------------------------------------------------------
 
@@ -259,7 +271,19 @@ INSERT INTO `notifications` (`id`, `title`, `message`, `type`, `priority`, `targ
 (6, 'Meeting Reminder', 'This is a reminder about our upcoming meeting on [DATE] at [TIME] in [LOCATION]. Please come prepared with any materials mentioned in previous communications.', 'announcement', 'normal', 'club_managers', NULL, 48, '2025-07-01 23:51:35', '2025-07-31 23:51:35', 0, NULL, 1),
 (7, 'Urgent Notice', 'URGENT: [DESCRIBE_URGENT_MATTER]. Please take immediate action or note the following important information: [Ray]', 'announcement', 'high', 'all', NULL, 48, '2025-07-02 13:40:14', '2025-08-01 13:40:14', 1, '2025-07-02 13:40:14', 1),
 (9, 'HAPPY BDAY HM', 'Haapppyybdaay Hope!!!', 'announcement', 'high', 'students', 1, 48, '2025-07-03 13:13:04', '2025-08-02 13:13:04', 1, '2025-07-03 13:13:04', 1),
-(10, 'Urgent Notice', 'URGENT: [DESCRIBE_URGENT_MATTER]. Please take immediate action or note the following important information: [DETAILS]', 'announcement', 'urgent', 'club_managers', NULL, 48, '2025-07-04 06:59:46', '2025-08-03 06:59:46', 0, NULL, 1);
+(10, 'Urgent Notice', 'URGENT: [DESCRIBE_URGENT_MATTER]. Please take immediate action or note the following important information: [DETAILS]', 'announcement', 'urgent', 'club_managers', NULL, 48, '2025-07-04 06:59:46', '2025-08-03 06:59:46', 0, NULL, 1),
+(13, 'Urgent Notice', 'URGENT!!!!. Please take immediate action or note the following important information:\r\nThe system will have a maintenance schedule for 7th July 2025 at 1pm - 4pm.', 'announcement', 'urgent', 'all', NULL, 48, '2025-07-07 03:10:30', '2025-08-06 03:10:30', 1, '2025-07-07 03:10:30', 1),
+(14, 'Urgent Notice', 'URGENT!!!!. Please take immediate action or note the following important information:\r\nThe system will have a maintenance schedule for 7th July 2025 at 1pm - 4pm.', 'announcement', 'urgent', 'all', NULL, 48, '2025-07-07 03:10:50', '2025-08-06 03:10:50', 1, '2025-07-07 03:10:50', 1),
+(15, 'Urgent Notice', 'URGENT!!!!. Please take immediate action or note the following important information:\r\nThe system will have a maintenance schedule for 7th July 2025 at 1pm - 4pm.', 'announcement', 'urgent', 'all', NULL, 48, '2025-07-07 03:18:17', '2025-08-06 03:18:17', 1, '2025-07-07 03:18:17', 1),
+(16, 'Urgent Notice', 'URGENT!!!!. Please take immediate action or note the following important information:\r\nThe system will have a maintenance schedule for 7th July 2025 at 1pm - 4pm.', 'announcement', 'urgent', 'all', NULL, 48, '2025-07-07 03:18:17', '2025-08-06 03:18:17', 1, '2025-07-07 03:18:17', 1),
+(17, 'Urgent Notice', 'URGENT!!!!. Please take immediate action or note the following important information:\r\nThe system will have a maintenance schedule for 7th July 2025 at 1pm - 4pm.', 'announcement', 'urgent', 'students', NULL, 48, '2025-07-07 03:18:38', '2025-08-06 03:18:38', 1, '2025-07-07 03:18:38', 1),
+(18, 'Urgent Notice', 'URGENT!!!!. Please take immediate action or note the following important information:\r\nThe system will have a maintenance schedule for 7th July 2025 at 1pm - 4pm.', 'announcement', 'urgent', 'students', NULL, 48, '2025-07-07 03:18:38', '2025-08-06 03:18:38', 1, '2025-07-07 03:18:38', 1),
+(19, 'Urgent Notice', 'URGENT!!!!. Please take immediate action or note the following important information:\r\nThe system will have a maintenance schedule for 7th July 2025 at 1pm - 4pm.', 'announcement', 'urgent', 'all', NULL, 48, '2025-07-07 03:18:54', '2025-08-06 03:18:54', 1, '2025-07-07 03:18:54', 1),
+(20, 'Urgent Notice', 'URGENT!!!!. Please take immediate action or note the following important information:\r\nThe system will have a maintenance schedule for 7th July 2025 at 1pm - 4pm.', 'announcement', 'urgent', 'all', NULL, 48, '2025-07-07 03:18:54', '2025-08-06 03:18:54', 1, '2025-07-07 03:18:54', 1),
+(23, 'Urgent Notice', 'Error posting announcement: Club ID required for club members target audience', 'announcement', 'urgent', 'club_members', 7, 48, '2025-07-07 03:20:31', '2025-08-06 03:20:31', 1, '2025-07-07 03:20:31', 1),
+(24, 'Urgent Notice', 'Error posting announcement: Club ID required for club members target audience', 'announcement', 'urgent', 'club_members', 7, 48, '2025-07-07 03:20:31', '2025-08-06 03:20:31', 1, '2025-07-07 03:20:31', 1),
+(25, 'Urgent Notice', 'Error posting announcement: Club ID required for club members target audience', 'announcement', 'urgent', 'admins', NULL, 48, '2025-07-07 03:20:55', '2025-08-06 03:20:55', 1, '2025-07-07 03:20:55', 1),
+(26, 'Urgent Notice', 'Error posting announcement: Club ID required for club members target audience', 'announcement', 'urgent', 'admins', NULL, 48, '2025-07-07 03:20:55', '2025-08-06 03:20:55', 1, '2025-07-07 03:20:55', 1);
 
 -- --------------------------------------------------------
 
@@ -289,7 +313,19 @@ INSERT INTO `notification_logs` (`id`, `notification_id`, `admin_id`, `action`, 
 (6, 6, 48, 'created', '{\"count\":3,\"users\":[{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"}]}', '2025-07-01 23:51:35'),
 (7, 7, 48, 'created', '{\"count\":8,\"users\":[{\"id\":43,\"username\":\"Kiki\",\"email\":\"mwiberikian6@gmail.com\"},{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":48,\"username\":\"Bruce\",\"email\":\"bruce@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":50,\"username\":\"Leroy\",\"email\":\"ndiao@gmail.com\"},{\"id\":51,\"username\":\"Kian\",\"email\":\"mwiberikian1@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"},{\"id\":55,\"username\":\"Reed\",\"email\":\"mwiberikian2@gmail.com\"}]}', '2025-07-02 13:40:14'),
 (8, 9, 48, 'created', '{\"count\":4,\"users\":[{\"id\":43,\"username\":\"Kiki\",\"email\":\"mwiberikian6@gmail.com\"},{\"id\":50,\"username\":\"Leroy\",\"email\":\"ndiao@gmail.com\"},{\"id\":51,\"username\":\"Kian\",\"email\":\"mwiberikian1@gmail.com\"},{\"id\":56,\"username\":\"Hope\",\"email\":\"hope@gmail.com\"}]}', '2025-07-03 13:13:04'),
-(9, 10, 48, 'created', '{\"count\":4,\"users\":[{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"},{\"id\":57,\"username\":\"Benjamin\",\"email\":\"benja@gmail.com\"}]}', '2025-07-04 06:59:46');
+(9, 10, 48, 'created', '{\"count\":4,\"users\":[{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"},{\"id\":57,\"username\":\"Benjamin\",\"email\":\"benja@gmail.com\"}]}', '2025-07-04 06:59:46'),
+(10, 13, 48, 'created', '{\"count\":11,\"users\":[{\"id\":43,\"username\":\"Kiki\",\"email\":\"mwiberikian6@gmail.com\"},{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":48,\"username\":\"Bruce\",\"email\":\"bruce@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":50,\"username\":\"Leroy\",\"email\":\"ndiao@gmail.com\"},{\"id\":51,\"username\":\"Kian\",\"email\":\"mwiberikian1@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"},{\"id\":55,\"username\":\"Reed\",\"email\":\"mwiberikian2@gmail.com\"},{\"id\":56,\"username\":\"Hope\",\"email\":\"hope@gmail.com\"},{\"id\":57,\"username\":\"Benjamin\",\"email\":\"benja@gmail.com\"},{\"id\":58,\"username\":\"Stacey\",\"email\":\"Staceyjudy75@gmail.com\"}]}', '2025-07-07 03:10:30'),
+(11, 14, 48, 'created', '{\"count\":11,\"users\":[{\"id\":43,\"username\":\"Kiki\",\"email\":\"mwiberikian6@gmail.com\"},{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":48,\"username\":\"Bruce\",\"email\":\"bruce@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":50,\"username\":\"Leroy\",\"email\":\"ndiao@gmail.com\"},{\"id\":51,\"username\":\"Kian\",\"email\":\"mwiberikian1@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"},{\"id\":55,\"username\":\"Reed\",\"email\":\"mwiberikian2@gmail.com\"},{\"id\":56,\"username\":\"Hope\",\"email\":\"hope@gmail.com\"},{\"id\":57,\"username\":\"Benjamin\",\"email\":\"benja@gmail.com\"},{\"id\":58,\"username\":\"Stacey\",\"email\":\"Staceyjudy75@gmail.com\"}]}', '2025-07-07 03:10:50'),
+(12, 15, 48, 'created', '{\"count\":11,\"users\":[{\"id\":43,\"username\":\"Kiki\",\"email\":\"mwiberikian6@gmail.com\"},{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":48,\"username\":\"Bruce\",\"email\":\"bruce@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":50,\"username\":\"Leroy\",\"email\":\"ndiao@gmail.com\"},{\"id\":51,\"username\":\"Kian\",\"email\":\"mwiberikian1@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"},{\"id\":55,\"username\":\"Reed\",\"email\":\"mwiberikian2@gmail.com\"},{\"id\":56,\"username\":\"Hope\",\"email\":\"hope@gmail.com\"},{\"id\":57,\"username\":\"Benjamin\",\"email\":\"benja@gmail.com\"},{\"id\":58,\"username\":\"Stacey\",\"email\":\"Staceyjudy75@gmail.com\"}]}', '2025-07-07 03:18:17'),
+(13, 16, 48, 'created', '{\"count\":11,\"users\":[{\"id\":43,\"username\":\"Kiki\",\"email\":\"mwiberikian6@gmail.com\"},{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":48,\"username\":\"Bruce\",\"email\":\"bruce@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":50,\"username\":\"Leroy\",\"email\":\"ndiao@gmail.com\"},{\"id\":51,\"username\":\"Kian\",\"email\":\"mwiberikian1@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"},{\"id\":55,\"username\":\"Reed\",\"email\":\"mwiberikian2@gmail.com\"},{\"id\":56,\"username\":\"Hope\",\"email\":\"hope@gmail.com\"},{\"id\":57,\"username\":\"Benjamin\",\"email\":\"benja@gmail.com\"},{\"id\":58,\"username\":\"Stacey\",\"email\":\"Staceyjudy75@gmail.com\"}]}', '2025-07-07 03:18:17'),
+(14, 17, 48, 'created', '{\"count\":5,\"users\":[{\"id\":43,\"username\":\"Kiki\",\"email\":\"mwiberikian6@gmail.com\"},{\"id\":50,\"username\":\"Leroy\",\"email\":\"ndiao@gmail.com\"},{\"id\":51,\"username\":\"Kian\",\"email\":\"mwiberikian1@gmail.com\"},{\"id\":56,\"username\":\"Hope\",\"email\":\"hope@gmail.com\"},{\"id\":58,\"username\":\"Stacey\",\"email\":\"Staceyjudy75@gmail.com\"}]}', '2025-07-07 03:18:38'),
+(15, 18, 48, 'created', '{\"count\":5,\"users\":[{\"id\":43,\"username\":\"Kiki\",\"email\":\"mwiberikian6@gmail.com\"},{\"id\":50,\"username\":\"Leroy\",\"email\":\"ndiao@gmail.com\"},{\"id\":51,\"username\":\"Kian\",\"email\":\"mwiberikian1@gmail.com\"},{\"id\":56,\"username\":\"Hope\",\"email\":\"hope@gmail.com\"},{\"id\":58,\"username\":\"Stacey\",\"email\":\"Staceyjudy75@gmail.com\"}]}', '2025-07-07 03:18:38'),
+(16, 19, 48, 'created', '{\"count\":11,\"users\":[{\"id\":43,\"username\":\"Kiki\",\"email\":\"mwiberikian6@gmail.com\"},{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":48,\"username\":\"Bruce\",\"email\":\"bruce@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":50,\"username\":\"Leroy\",\"email\":\"ndiao@gmail.com\"},{\"id\":51,\"username\":\"Kian\",\"email\":\"mwiberikian1@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"},{\"id\":55,\"username\":\"Reed\",\"email\":\"mwiberikian2@gmail.com\"},{\"id\":56,\"username\":\"Hope\",\"email\":\"hope@gmail.com\"},{\"id\":57,\"username\":\"Benjamin\",\"email\":\"benja@gmail.com\"},{\"id\":58,\"username\":\"Stacey\",\"email\":\"Staceyjudy75@gmail.com\"}]}', '2025-07-07 03:18:54'),
+(17, 20, 48, 'created', '{\"count\":11,\"users\":[{\"id\":43,\"username\":\"Kiki\",\"email\":\"mwiberikian6@gmail.com\"},{\"id\":47,\"username\":\"Steve\",\"email\":\"steve1@gmail.com\"},{\"id\":48,\"username\":\"Bruce\",\"email\":\"bruce@gmail.com\"},{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"},{\"id\":50,\"username\":\"Leroy\",\"email\":\"ndiao@gmail.com\"},{\"id\":51,\"username\":\"Kian\",\"email\":\"mwiberikian1@gmail.com\"},{\"id\":54,\"username\":\"Clark\",\"email\":\"mwiberikian3@gmail.com\"},{\"id\":55,\"username\":\"Reed\",\"email\":\"mwiberikian2@gmail.com\"},{\"id\":56,\"username\":\"Hope\",\"email\":\"hope@gmail.com\"},{\"id\":57,\"username\":\"Benjamin\",\"email\":\"benja@gmail.com\"},{\"id\":58,\"username\":\"Stacey\",\"email\":\"Staceyjudy75@gmail.com\"}]}', '2025-07-07 03:18:54'),
+(18, 23, 48, 'created', '{\"count\":1,\"users\":[{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"}]}', '2025-07-07 03:20:31'),
+(19, 24, 48, 'created', '{\"count\":1,\"users\":[{\"id\":49,\"username\":\"Joshua\",\"email\":\"Josh@gmail.com\"}]}', '2025-07-07 03:20:31'),
+(20, 25, 48, 'created', '{\"count\":2,\"users\":[{\"id\":48,\"username\":\"Bruce\",\"email\":\"bruce@gmail.com\"},{\"id\":55,\"username\":\"Reed\",\"email\":\"mwiberikian2@gmail.com\"}]}', '2025-07-07 03:20:55'),
+(21, 26, 48, 'created', '{\"count\":2,\"users\":[{\"id\":48,\"username\":\"Bruce\",\"email\":\"bruce@gmail.com\"},{\"id\":55,\"username\":\"Reed\",\"email\":\"mwiberikian2@gmail.com\"}]}', '2025-07-07 03:20:55');
 
 -- --------------------------------------------------------
 
@@ -301,10 +337,18 @@ CREATE TABLE `patron_requests` (
   `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `club_id` int(11) NOT NULL,
+  `requested_by` int(11) NOT NULL,
   `request_notes` text DEFAULT NULL,
   `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `patron_requests`
+--
+
+INSERT INTO `patron_requests` (`id`, `user_id`, `club_id`, `requested_by`, `request_notes`, `status`, `created_at`) VALUES
+(2, 49, 12, 49, 'I want to build Optimus Prime', 'approved', '2025-07-06 17:19:37');
 
 -- --------------------------------------------------------
 
@@ -442,7 +486,89 @@ INSERT INTO `user_notifications` (`id`, `user_id`, `notification_id`, `read_at`,
 (36, 47, 10, '2025-07-05 14:21:38', '2025-07-04 06:59:46', 'unread', 1),
 (37, 49, 10, NULL, '2025-07-04 06:59:46', 'unread', 0),
 (38, 54, 10, NULL, '2025-07-04 06:59:46', 'unread', 0),
-(39, 57, 10, NULL, '2025-07-04 06:59:46', 'unread', 0);
+(39, 57, 10, NULL, '2025-07-04 06:59:46', 'unread', 0),
+(40, 43, 13, NULL, '2025-07-07 03:10:30', 'unread', 0),
+(41, 47, 13, NULL, '2025-07-07 03:10:30', 'unread', 0),
+(42, 48, 13, NULL, '2025-07-07 03:10:30', 'unread', 0),
+(43, 49, 13, NULL, '2025-07-07 03:10:30', 'unread', 0),
+(44, 50, 13, NULL, '2025-07-07 03:10:30', 'unread', 0),
+(45, 51, 13, NULL, '2025-07-07 03:10:30', 'unread', 0),
+(46, 54, 13, NULL, '2025-07-07 03:10:30', 'unread', 0),
+(47, 55, 13, NULL, '2025-07-07 03:10:30', 'unread', 0),
+(48, 56, 13, NULL, '2025-07-07 03:10:30', 'unread', 0),
+(49, 57, 13, NULL, '2025-07-07 03:10:30', 'unread', 0),
+(50, 58, 13, NULL, '2025-07-07 03:10:30', 'unread', 0),
+(51, 43, 14, NULL, '2025-07-07 03:10:50', 'unread', 0),
+(52, 47, 14, NULL, '2025-07-07 03:10:50', 'unread', 0),
+(53, 48, 14, NULL, '2025-07-07 03:10:50', 'unread', 0),
+(54, 49, 14, NULL, '2025-07-07 03:10:50', 'unread', 0),
+(55, 50, 14, NULL, '2025-07-07 03:10:50', 'unread', 0),
+(56, 51, 14, NULL, '2025-07-07 03:10:50', 'unread', 0),
+(57, 54, 14, NULL, '2025-07-07 03:10:50', 'unread', 0),
+(58, 55, 14, NULL, '2025-07-07 03:10:50', 'unread', 0),
+(59, 56, 14, NULL, '2025-07-07 03:10:50', 'unread', 0),
+(60, 57, 14, NULL, '2025-07-07 03:10:50', 'unread', 0),
+(61, 58, 14, NULL, '2025-07-07 03:10:50', 'unread', 0),
+(62, 43, 15, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(63, 47, 15, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(64, 48, 15, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(65, 49, 15, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(66, 50, 15, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(67, 51, 15, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(68, 54, 15, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(69, 55, 15, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(70, 56, 15, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(71, 57, 15, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(72, 58, 15, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(73, 43, 16, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(74, 47, 16, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(75, 48, 16, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(76, 49, 16, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(77, 50, 16, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(78, 51, 16, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(79, 54, 16, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(80, 55, 16, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(81, 56, 16, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(82, 57, 16, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(83, 58, 16, NULL, '2025-07-07 03:18:17', 'unread', 0),
+(84, 43, 17, NULL, '2025-07-07 03:18:38', 'unread', 0),
+(85, 50, 17, NULL, '2025-07-07 03:18:38', 'unread', 0),
+(86, 51, 17, NULL, '2025-07-07 03:18:38', 'unread', 0),
+(87, 56, 17, NULL, '2025-07-07 03:18:38', 'unread', 0),
+(88, 58, 17, NULL, '2025-07-07 03:18:38', 'unread', 0),
+(89, 43, 18, NULL, '2025-07-07 03:18:38', 'unread', 0),
+(90, 50, 18, NULL, '2025-07-07 03:18:38', 'unread', 0),
+(91, 51, 18, NULL, '2025-07-07 03:18:38', 'unread', 0),
+(92, 56, 18, NULL, '2025-07-07 03:18:38', 'unread', 0),
+(93, 58, 18, NULL, '2025-07-07 03:18:38', 'unread', 0),
+(94, 43, 19, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(95, 47, 19, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(96, 48, 19, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(97, 49, 19, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(98, 50, 19, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(99, 51, 19, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(100, 54, 19, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(101, 55, 19, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(102, 56, 19, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(103, 57, 19, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(104, 58, 19, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(105, 43, 20, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(106, 47, 20, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(107, 48, 20, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(108, 49, 20, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(109, 50, 20, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(110, 51, 20, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(111, 54, 20, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(112, 55, 20, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(113, 56, 20, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(114, 57, 20, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(115, 58, 20, NULL, '2025-07-07 03:18:54', 'unread', 0),
+(116, 49, 23, NULL, '2025-07-07 03:20:31', 'unread', 0),
+(117, 49, 24, NULL, '2025-07-07 03:20:31', 'unread', 0),
+(118, 48, 25, NULL, '2025-07-07 03:20:55', 'unread', 0),
+(119, 55, 25, NULL, '2025-07-07 03:20:55', 'unread', 0),
+(120, 48, 26, NULL, '2025-07-07 03:20:55', 'unread', 0),
+(121, 55, 26, NULL, '2025-07-07 03:20:55', 'unread', 0);
 
 --
 -- Indexes for dumped tables
@@ -540,7 +666,8 @@ ALTER TABLE `notification_logs`
 ALTER TABLE `patron_requests`
   ADD PRIMARY KEY (`id`),
   ADD KEY `user_id` (`user_id`),
-  ADD KEY `club_id` (`club_id`);
+  ADD KEY `club_id` (`club_id`),
+  ADD KEY `fk_requested_by` (`requested_by`);
 
 --
 -- Indexes for table `system_announcements`
@@ -593,7 +720,7 @@ ALTER TABLE `admin_activity`
 -- AUTO_INCREMENT for table `announcements`
 --
 ALTER TABLE `announcements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
 
 --
 -- AUTO_INCREMENT for table `clubs`
@@ -605,7 +732,7 @@ ALTER TABLE `clubs`
 -- AUTO_INCREMENT for table `club_managers`
 --
 ALTER TABLE `club_managers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `events`
@@ -623,31 +750,31 @@ ALTER TABLE `login_logs`
 -- AUTO_INCREMENT for table `memberships`
 --
 ALTER TABLE `memberships`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT for table `membership_requests`
 --
 ALTER TABLE `membership_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 
 --
 -- AUTO_INCREMENT for table `notification_logs`
 --
 ALTER TABLE `notification_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `patron_requests`
 --
 ALTER TABLE `patron_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `system_announcements`
@@ -671,7 +798,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_notifications`
 --
 ALTER TABLE `user_notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=122;
 
 --
 -- Constraints for dumped tables
@@ -735,6 +862,7 @@ ALTER TABLE `notification_logs`
 -- Constraints for table `patron_requests`
 --
 ALTER TABLE `patron_requests`
+  ADD CONSTRAINT `fk_requested_by` FOREIGN KEY (`requested_by`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `patron_requests_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `patron_requests_ibfk_2` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`) ON DELETE CASCADE;
 

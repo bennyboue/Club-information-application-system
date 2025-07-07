@@ -82,16 +82,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die("Invalid club selection");
     }
 
-    if (isset($_POST['add_member'])) {
-        // Add member logic
-        $student_id = $_POST['student_id'];
-        $add_member = $conn->prepare("INSERT INTO memberships (club_id, user_id) VALUES (?, ?)");
+   // Replace the existing 'add_member' code block with this:
+if (isset($_POST['add_member'])) {
+    $student_id = $_POST['student_id'];
+    
+    // Check for existing membership
+    $check_membership = $conn->prepare("
+        SELECT id FROM memberships 
+        WHERE club_id = ? AND user_id = ?
+    ");
+    $check_membership->bind_param("ii", $club_id, $student_id);
+    $check_membership->execute();
+    $existing = $check_membership->get_result()->fetch_assoc();
+    
+    if ($existing) {
+        // Update existing membership to approved
+        $update_member = $conn->prepare("
+            UPDATE memberships SET status = 'approved'
+            WHERE id = ?
+        ");
+        $update_member->bind_param("i", $existing['id']);
+        $update_member->execute();
+        $_SESSION['message'] = "Member status updated to approved!";
+    } else {
+        // Create new membership
+        $add_member = $conn->prepare("
+            INSERT INTO memberships (club_id, user_id, status) 
+            VALUES (?, ?, 'approved')
+        ");
         $add_member->bind_param("ii", $club_id, $student_id);
         $add_member->execute();
-        
-       $_SESSION['message'] = "Member added successfully!";
-header("Location: club_manager_dashboard.php?club_id=$club_id");
-exit();
+        $_SESSION['message'] = "Member added successfully!";
+    }
+    
+    header("Location: club_manager_dashboard.php?club_id=$club_id");
+    exit();
+}
     } 
     elseif (isset($_POST['remove_member'])) {
         // Remove member from club
@@ -147,45 +173,54 @@ exit();
         header("Location: club_manager_dashboard.php?club_id=$club_id");
         exit();
     }
-    elseif (isset($_POST['approve_request'])) {
-        $request_id = intval($_POST['request_id']);
-        $student_id = intval($_POST['student_id']);
-        
-        // Update request status
-        $approve_request = $conn->prepare("
-            UPDATE membership_requests 
-            SET status = 'approved' 
-            WHERE id = ? AND club_id = ?
-        ");
-        if (!$approve_request) {
-            die("Error preparing approve request query: " . $conn->error);
-        }
-        
-        $approve_request->bind_param("ii", $request_id, $club_id);
-        $approve_request->execute();
-        
-        // Add to memberships
-        $add_member = $conn->prepare("INSERT INTO memberships (club_id, user_id) VALUES (?, ?)");
-        $add_member->bind_param("ii", $club_id, $student_id);
-        $add_member->execute();
-        
-       $_SESSION['message'] = "Membership request approved!";
-header("Location: club_manager_dashboard.php?club_id=$club_id");
-exit();
+    // Replace the approve_request code block with this:
+elseif (isset($_POST['approve_request'])) {
+    $request_id = intval($_POST['request_id']);
+    $student_id = intval($_POST['student_id']);
+
+    $approve_request = $conn->prepare("
+        UPDATE memberships 
+        SET status = 'approved'
+        WHERE id = ? AND club_id = ?
+    ");
+    
+    if (!$approve_request) {
+        die("Error preparing approve request query: " . $conn->error);
     }
-    elseif (isset($_POST['reject_request'])) {
-        $request_id = intval($_POST['request_id']);
-        
-        // Reject request
-        $reject_request = $conn->prepare("UPDATE membership_requests SET status = 'rejected' WHERE id = ?");
-        $reject_request->bind_param("i", $request_id);
-        $reject_request->execute();
-        
-       $_SESSION['message'] = "Membership request rejected!";
-header("Location: club_manager_dashboard.php?club_id=$club_id");
-exit();
+    
+    $approve_request->bind_param("ii", $request_id, $club_id);
+    if ($approve_request->execute()) {
+        $_SESSION['message'] = "Membership request approved!";
+    } else {
+        $_SESSION['message'] = "Error: " . $approve_request->error;
     }
+    header("Location: club_manager_dashboard.php?club_id=$club_id");
+    exit();
 }
+
+// Replace the reject_request code block with this:
+elseif (isset($_POST['reject_request'])) {
+    $request_id = intval($_POST['request_id']);
+    
+    $reject_request = $conn->prepare("
+        DELETE FROM memberships 
+        WHERE id = ? AND club_id = ?
+    ");
+    
+    if (!$reject_request) {
+        die("Error preparing reject request query: " . $conn->error);
+    }
+    
+    $reject_request->bind_param("ii", $request_id, $club_id);
+    if ($reject_request->execute()) {
+        $_SESSION['message'] = "Membership request rejected!";
+    } else {
+        $_SESSION['message'] = "Error: " . $reject_request->error;
+    }
+    header("Location: club_manager_dashboard.php?club_id=$club_id");
+    exit();
+}
+
 
 // Get club members
 $members_query = $conn->prepare("
@@ -202,15 +237,12 @@ $members_query->execute();
 $members_result = $members_query->get_result();
 
 // Get all students not in this club
-$students_query = $conn->prepare("
-    SELECT u.id, u.username 
-    FROM users u 
-    WHERE u.role = 'student' 
-    AND u.id NOT IN (
-        SELECT m.user_id 
-        FROM memberships m 
-        WHERE m.club_id = ? AND m.status = 'approved'
-    )
+// Replace the existing membership requests query with this:
+$requests_query = $conn->prepare("
+    SELECT m.id, u.id as user_id, u.username, u.email, m.joined_at as created_at 
+    FROM memberships m 
+    JOIN users u ON m.user_id = u.id 
+    WHERE m.club_id = ? AND m.status = 'pending'
 ");
 if (!$students_query) {
     die("Error preparing students query: " . $conn->error);
@@ -769,7 +801,7 @@ $requests_result = $requests_query->get_result();
                 <?php if ($events_result->num_rows > 0): ?>
                     <?php while ($event = $events_result->fetch_assoc()): ?>
                     <div class="event-card">
-                        <div class="event-name"><?php echo htmlspecialchars($event['event_name']); ?></div>
+                        <div class="event-name"><?php echo htmlspecialchars($event['title']); ?></div>
                         <div class="event-date">Date: <?php echo date('F j, Y', strtotime($event['event_date'])); ?></div>
                         <div class="event-description"><?php echo nl2br(htmlspecialchars($event['description'])); ?></div>
                     </div>

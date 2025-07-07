@@ -789,9 +789,6 @@ $conn->close();
                             <div class="club-name"><?php echo htmlspecialchars($club['name']); ?></div>
                             <span class="club-initials"><?php echo htmlspecialchars($club['initials']); ?></span>
                             <div class="club-description"><?php echo htmlspecialchars($club['description']); ?></div>
-                            <?php if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'student'): ?>
-                                <button class="join-btn" onclick="joinClub(<?php echo $club['id']; ?>, event)" data-club-id="<?php echo $club['id']; ?>">Join Club</button>
-                            <?php endif; ?>
                         </div>
                     <?php 
                         endif;
@@ -820,9 +817,6 @@ $conn->close();
                             <div class="club-name"><?php echo htmlspecialchars($club['name']); ?></div>
                             <span class="club-initials"><?php echo htmlspecialchars($club['initials']); ?></span>
                             <div class="club-description"><?php echo htmlspecialchars($club['description']); ?></div>
-                            <?php if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'student'): ?>
-                                <button class="join-btn" onclick="joinClub(<?php echo $club['id']; ?>, event)" data-club-id="<?php echo $club['id']; ?>">Join Club</button>
-                            <?php endif; ?>
                         </div>
                     <?php 
                         endif;
@@ -851,9 +845,6 @@ $conn->close();
                             <div class="club-name"><?php echo htmlspecialchars($club['name']); ?></div>
                             <span class="club-initials"><?php echo htmlspecialchars($club['initials']); ?></span>
                             <div class="club-description"><?php echo htmlspecialchars($club['description']); ?></div>
-                            <?php if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'student'): ?>
-                                <button class="join-btn" onclick="joinClub(<?php echo $club['id']; ?>, event)" data-club-id="<?php echo $club['id']; ?>">Join Club</button>
-                            <?php endif; ?>
                         </div>
                     <?php 
                         endif;
@@ -882,9 +873,6 @@ $conn->close();
                             <div class="club-name"><?php echo htmlspecialchars($club['name']); ?></div>
                             <span class="club-initials"><?php echo htmlspecialchars($club['initials']); ?></span>
                             <div class="club-description"><?php echo htmlspecialchars($club['description']); ?></div>
-                            <?php if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'student'): ?>
-                                <button class="join-btn" onclick="joinClub(<?php echo $club['id']; ?>, event)" data-club-id="<?php echo $club['id']; ?>">Join Club</button>
-                            <?php endif; ?>
                         </div>
                     <?php 
                         endif;
@@ -1237,11 +1225,9 @@ function goToEvents() {
     <!-- Footer Section -->
     <footer class="footer">
         <div class="footer-content">
-            <div class="footer-section">
+            <div class="contact-info">
                 <h3>About Us</h3>
                 <p>The School Club Management System is dedicated to fostering student engagement and personal growth through organized extracurricular activities. Since our establishment, we have been the bridge connecting students with their passions and helping them discover new interests.</p>
-                
-                <p>Our platform serves as the central hub for all club activities, bringing together diverse communities of learners who share common interests in academics, arts, sciences, and sports.</p>
                 
                 <p><strong>Our Mission:</strong> To enrich the university experience by providing students with opportunities to develop leadership skills, build meaningful relationships, and pursue their passions beyond the classroom.</p>
                 
@@ -1271,18 +1257,12 @@ function goToEvents() {
                 <h3>Helpdesk Location</h3>
                 <p>Visit our helpdesk for immediate assistance with club registrations, event information, and general support:</p>
                 
-                <ul>
-                    <li><strong>Main Campus:</strong> Phase 1, Central Building, First Floor</li>
-                    <li><strong>Student Center:</strong> Phase 2, Strathmore Student Center, Second Floor</li>
-                </ul>
-                
                 <div class="contact-info">
                     <strong>🏫 Main Helpdesk Address:</strong>
                     Phase 1, Central Building, First Floor<br>
                     Phase 2, Strathmore Student Center, Second Floor<br>
                 </div>
                 
-                <p style="margin-top: 15px;"><em>Our friendly staff are always ready to help you find the perfect club to join and answer any questions about campus activities!</em></p>
             </div>
         </div>
         
